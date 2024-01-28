@@ -1,8 +1,10 @@
 HTML classes/identification for each feature
 
-Stars:
-Watched:
-Forked:
+Stars, Watched, Forked:
+id = repo-content-pjax-container
+  element = div, class = mt-2
+    element = a
+      element = strong
 Issues:
 License:
 Code of Conduct:
