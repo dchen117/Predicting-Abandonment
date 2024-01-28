@@ -4,7 +4,7 @@ import csv
 
 # Open CSV file to write to later
 file_name = "features.csv"
-f = csv.writer(open(file_name, 'w', newline=''))
+f = csv.writer(open(file_name, 'a', newline=''))
 
 # Create variables to store URL and retrieve HTML contents of URL
 url = ""
