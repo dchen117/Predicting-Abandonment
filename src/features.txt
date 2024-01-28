@@ -1,0 +1,15 @@
+HTML classes/identification for each feature
+
+Stars:
+Watched:
+Forked:
+Issues:
+License:
+Code of Conduct:
+README:
+Branches:
+Releases:
+Deployments:
+Contributors:
+Pull Requests:
+Commits:
