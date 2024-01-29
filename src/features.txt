@@ -1,17 +1,30 @@
 HTML classes/identification for each feature
 
+Projects url:
+element = a, class = "Link__StyledLink-sc-14289xe-0 GCHqa"
+
 Stars, Watched, Forked:
 id = repo-content-pjax-container
-  element = div, class = mt-2
-    element = a
+  element = div, class = mt-2      # can probably skip
+    element = a                    # can probably skip
       element = strong
+
 Issues:
+id = issues-repo-tab-count
+
 License:
 Code of Conduct:
 README:
 Branches:
+id = responsive-meta-container
+  element = div, class = mb-3
+    element = a
+      element = strong
+
 Releases:
 Deployments:
 Contributors:
 Pull Requests:
+id = pull-requests-repo-tab-count
+
 Commits:
