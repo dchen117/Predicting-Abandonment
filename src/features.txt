@@ -29,17 +29,22 @@ element = svg, class = "octicon octicon-git-branch mr-1"
 
 Contributors:
 element = a, class = "Link--primary no-underline Link d-flex flex-items-center"
-find_all("a", string = "Contributor").find("span", recursive=False)
+find("a", string = "Contributor").find("span", recursive=False)
 *Backup: Loop to find "Contributor"
 
 Deployments:
 element = a, class = "Link--primary no-underline Link d-flex flex-items-center"
-find_all("a", string = "Deployment").find("span", recursive=False)
+find("a", string = "Deployment").find("span", recursive=False)
 *Backup: Loop to find "Deployment"
 
 License:
-
+find("svg", string = "License")
 
 Code of Conduct:
+find("svg", string = "Code of conduct")
+
 README:
+find("svg" string = "Readme")
+
 Releases:
+find("a", string = "Releases").find("span", recursive = False)
