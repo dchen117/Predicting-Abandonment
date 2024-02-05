@@ -81,8 +81,26 @@ Example:
   ]
 }
 
-## Next Feature
+## Some Other Features
 
+Within the json response returned by a GET request to https://api.github.com/repos/OWNER/REPO
+
+Stars: ['stargazers_count']
+Watches: ['watchers_count']
+Size: ['size']
+Has A Wiki Page: ['has_wiki'] (boolean variable)
+Open Issues: ['open_issues_count']
+Forks: ['forks_count']
+Network Count: ['network_count']
+Subscribers: ['subscribers_count']
+Created Date: ['created_at']
+Last Update: ['updated_at']
+Last Push: ['pushed_at']
+
+
+License: ['license'] and then its another dictionary => ['name']
+
+Organization? : ['organization']
 
 
 
