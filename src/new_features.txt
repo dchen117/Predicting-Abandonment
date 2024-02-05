@@ -1,5 +1,11 @@
 ## Community/Profile (includes overall health score, the repository description, the presence of documentation, the detected code of conduct, the detected license, and the presence of ISSUE_TEMPLATE, PULL_REQUEST_TEMPLATE, README, and CONTRIBUTING files)
-URL: https://api.github.com/repos/OWNER/REPO/community/profile (emphasis on the community/profile)
+
+Command: curl -L \
+  -H "Accept: application/vnd.github+json" \
+  -H "Authorization: Bearer <YOUR-TOKEN>" \
+  -H "X-GitHub-Api-Version: 2022-11-28" \
+  https://api.github.com/repos/OWNER/REPO/community/profile
+
 Example:
 {
   "health_percentage": 100,
