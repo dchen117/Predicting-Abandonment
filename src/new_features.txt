@@ -96,6 +96,8 @@ Subscribers: ['subscribers_count']
 Created Date: ['created_at']
 Last Update: ['updated_at']
 Last Push: ['pushed_at']
+Language: ['language'] (Not Programming)
+Has Discussions: ['has_discussions']
 
 
 License: ['license'] and then its another dictionary => ['name']
