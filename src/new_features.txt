@@ -90,13 +90,12 @@ Command: repo_info.get("{FEATURE}", "None")
 {FEATURES}:
 
 Stars: ['stargazers_count']
-Watches: ['watchers_count']
+Watches: ['subscribers_count']
 Size: ['size']
 Has A Wiki Page: ['has_wiki'] (boolean variable)
 Open Issues: ['open_issues_count']
 Forks: ['forks_count']
 Network Count: ['network_count']
-Subscribers: ['subscribers_count']
 Created Date: ['created_at']
 Last Update: ['updated_at']
 Last Push: ['pushed_at']
