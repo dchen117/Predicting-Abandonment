@@ -85,22 +85,44 @@ Example:
 
 Within the json response returned by a GET request to https://api.github.com/repos/OWNER/REPO
 
+Command: repo_info.get("{FEATURE}", "None")
+
+{FEATURES}:
+
 Stars: ['stargazers_count']
-Watches: ['watchers_count']
+Watches: ['subscribers_count']
 Size: ['size']
 Has A Wiki Page: ['has_wiki'] (boolean variable)
 Open Issues: ['open_issues_count']
 Forks: ['forks_count']
 Network Count: ['network_count']
-Subscribers: ['subscribers_count']
 Created Date: ['created_at']
 Last Update: ['updated_at']
 Last Push: ['pushed_at']
+Language: ['language'] (Not Programming)
+Has Discussions: ['has_discussions'] (boolean)
+Has Pages: ['has_pages'] (boolean)
+Contributors: => https://api.github.com/repos/OWNER/REPO/contributors => Get Length of List
+Commits: => https://api.github.com/repos/OWNER/REPO/commits => Get Length of List
+
 
 
 License: ['license'] and then its another dictionary => ['name']
 
 Organization? : ['organization']
+Homepage? : ['homepage']
+Topics? : ['topics'] => Get List
+Followers? : => https://api.github.com/users/OWNER/followers => Get Length of list
+Subscriptions? : => https://api.github.com/users/OWNER/subscriptions
+Number of Repos for User? : => https://api.github.com/users/OWNER/repos
+Tags? : https://api.github.com/repos/OWNER/REPO/tags 
+Number of Current Branches? : https://api.github.com/repos/OWNER/REPO/branches
+Events or Issues? : https://api.github.com/repos/OWNER/REPO/issues/events
+This one Issues? : https://api.github.com/repos/OWNER/REPO/issues
+Pulls? : https://api.github.com/repos/OWNER/REPO/pulls
+Milestones? : https://api.github.com/repos/OWNER/REPO/milestones
+Labels? : https://api.github.com/repos/OWNER/REPO/labels
+Releases? : https://api.github.com/repos/OWNER/REPO/releases
 
 
 
