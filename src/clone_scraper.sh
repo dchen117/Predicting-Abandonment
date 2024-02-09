@@ -22,7 +22,17 @@ while read -r line; do
   # Number of Commits
   num_commits=$(git log --pretty=oneline | wc -l)
 
+  # Number of Branches
+  num_branches=$(git branch -a | wc -l)
 
 
+  # List of commits for days
+  day_trends=$(git log --date=short --pretty=format:%cd | sort | uniq -c)
+
+  # List of commits for months
+  month_trends=$(git log --date=short --pretty=format:%cd | cut -d '-' -f 1-2 | sort | uniq -c)
+
+  # List of commits for years
+  year_trends=$(git log --date=short --pretty=format:%cd | cut -d '-' -f 1 | sort | uniq -c)
 
 done <file.txt
