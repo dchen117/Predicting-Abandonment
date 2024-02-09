@@ -89,18 +89,18 @@ Command: repo_info.get("{FEATURE}", "None")
 
 {FEATURES}:
 
-Stars: ['stargazers_count']
-Watches: ['subscribers_count']
-Size: ['size']
-Has A Wiki Page: ['has_wiki'] (boolean variable)
-Open Issues: ['open_issues_count']
-Forks: ['forks_count']
-Created Date: ['created_at']
-Last Update: ['updated_at']
-Last Push: ['pushed_at']
-Language: ['language']
-Has Discussions: ['has_discussions'] (boolean)
-Has Pages: ['has_pages'] (boolean)
+Stars: ['stargazers_count'] ----
+Watches: ['subscribers_count'] ----
+Size: ['size'] ----
+Has A Wiki Page: ['has_wiki'] (boolean variable) ----
+Open Issues: ['open_issues_count'] ----
+Forks: ['forks_count'] ----
+Created Date: ['created_at'] ----
+Last Update: ['updated_at'] ----
+Last Push: ['pushed_at'] ----
+Language: ['language'] ----
+Has Discussions: ['has_discussions'] (boolean) ----
+Has Pages: ['has_pages'] (boolean) ----
 Contributors: => https://api.github.com/repos/OWNER/REPO/contributors => Get Length of List
 Commits: => https://api.github.com/repos/OWNER/REPO/commits => Get Length of List
 
