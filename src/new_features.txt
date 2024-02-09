@@ -95,11 +95,10 @@ Size: ['size']
 Has A Wiki Page: ['has_wiki'] (boolean variable)
 Open Issues: ['open_issues_count']
 Forks: ['forks_count']
-Network Count: ['network_count']
 Created Date: ['created_at']
 Last Update: ['updated_at']
 Last Push: ['pushed_at']
-Language: ['language'] (Not Programming)
+Language: ['language']
 Has Discussions: ['has_discussions'] (boolean)
 Has Pages: ['has_pages'] (boolean)
 Contributors: => https://api.github.com/repos/OWNER/REPO/contributors => Get Length of List
