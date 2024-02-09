@@ -101,8 +101,8 @@ Last Push: ['pushed_at'] ----
 Language: ['language'] ----
 Has Discussions: ['has_discussions'] (boolean) ----
 Has Pages: ['has_pages'] (boolean) ----
-Archived: ['archived'] (boolean)
-Has Projects: ['has_projects'] (boolean)
+Archived: ['archived'] (boolean) ----
+Has Projects: ['has_projects'] (boolean) ----
 Contributors: => https://api.github.com/repos/OWNER/REPO/contributors => Get Length of List
 Commits: => https://api.github.com/repos/OWNER/REPO/commits => Get Length of List
 
