@@ -25,6 +25,8 @@ while read -r line; do
   # Number of Branches
   num_branches=$(git branch -a | wc -l)
 
+  # Number of tags AKA releases
+  num_tags=$(git tag | sort | uniq | wc -l)
 
   # List of commits for days
   day_trends=$(git log --date=short --pretty=format:%cd | sort | uniq -c)

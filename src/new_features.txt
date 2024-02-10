@@ -116,7 +116,6 @@ Topics? : ['topics'] => Get List
 Followers? : => https://api.github.com/users/OWNER/followers => Get Length of list
 Subscriptions? : => https://api.github.com/users/OWNER/subscriptions
 Number of Repos for User? : => https://api.github.com/users/OWNER/repos
-Tags? : https://api.github.com/repos/OWNER/REPO/tags 
 Events or Issues? : https://api.github.com/repos/OWNER/REPO/issues/events
 This one Issues? : https://api.github.com/repos/OWNER/REPO/issues
 Pulls? : https://api.github.com/repos/OWNER/REPO/pulls
