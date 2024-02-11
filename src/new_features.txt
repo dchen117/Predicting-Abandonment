@@ -108,10 +108,10 @@ Commits: => https://api.github.com/repos/OWNER/REPO/commits => Get Length of Lis
 
 
 
-License: ['license'] and then its another dictionary => ['spdx_id']
+License: ['license'] and then its another dictionary => ['spdx_id'] -------
 
-Organization? : ['organization']
-Homepage? : ['homepage']
+Organization? : ['organization'] -------
+Homepage? : ['homepage'] -------
 Topics? : ['topics'] => Get List
 Followers? : => https://api.github.com/users/OWNER/followers => Get Length of list
 Subscriptions? : => https://api.github.com/users/OWNER/subscriptions
