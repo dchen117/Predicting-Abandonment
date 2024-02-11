@@ -121,7 +121,6 @@ This one Issues? : https://api.github.com/repos/OWNER/REPO/issues
 Pulls? : https://api.github.com/repos/OWNER/REPO/pulls
 Milestones? : https://api.github.com/repos/OWNER/REPO/milestones
 Labels? : https://api.github.com/repos/OWNER/REPO/labels
-Releases? : https://api.github.com/repos/OWNER/REPO/releases
 
 
 

@@ -19,8 +19,17 @@ while read -r line; do
 
   # Get number of different types of file
 
+  # Get top programming language used
+  top_lang=$(cloc . | sed -n 5p | cut -d ' ' -f 1)
+
+  # Number of Contributors, people who have made commits, could be more as remote commits are listed as different people
+  num_contributors=$(git shortlog -s -n | wc -l)
+
   # Number of Commits
   num_commits=$(git log --pretty=oneline | wc -l)
+
+  # Number of Merge Commits, is included in number of commits above
+  num_merges=$(git log --pretty=oneline --merges | wc -l)
 
   # Number of Branches
   num_branches=$(git branch -a | wc -l)
