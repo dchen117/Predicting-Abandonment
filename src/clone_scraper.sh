@@ -40,6 +40,51 @@ for i in "${repo_list[@]}"; do
   # Number of tags AKA releases
   num_tags=$(git tag | sort | uniq | wc -l | tr -d "[:blank:]")
 
+  # Presence of README and other files
+  README=$(find . -name "README.md")
+  SECURITY=$(find . -name "SECURITY.md")
+  CONDUCT=$(find . -name "CODE_OF_CONDUCT.md")
+  CONTRIBUTING=$(find . -name "CONTRIBUTING.md")
+  ISSUE_TEMPLATE=$(find . -name "ISSUE_TEMPLATE.md")
+  PULL_TEMPLATE=$(find . -name "PULL_REQUEST_TEMPLATE.md")
+
+  # Check if empty
+  if [[ -z "$README" ]]; then
+    README="NO"
+  else
+    README="YES"
+  fi
+
+  if [[ -z "$SECURITY" ]]; then
+    SECURITY="NO"
+  else
+    SECURITY="YES"
+  fi
+
+  if [[ -z "$CONDUCT" ]]; then
+    CONDUCT="NO"
+  else
+    CONDUCT="YES"
+  fi
+
+  if [[ -z "$CONTRIBUTING" ]]; then
+    CONTRIBUTING="NO"
+  else
+    CONTRIBUTING="YES"
+  fi
+
+  if [[ -z "$ISSUE_TEMPLATE" ]]; then
+    ISSUE_TEMPLATE="NO"
+  else
+    ISSUE_TEMPLATE="YES"
+  fi
+
+  if [[ -z "$PULL_TEMPLATE" ]]; then
+    PULL_TEMPLATE="NO"
+  else
+    PULL_TEMPLATE="YES"
+  fi
+
   # List of commits for days
   day_trends=$(git log --date=short --pretty=format:%cd | sort | uniq -c)
   
@@ -50,7 +95,7 @@ for i in "${repo_list[@]}"; do
   year_trends=$(git log --date=short --pretty=format:%cd | cut -d '-' -f 1 | sort | uniq -c)
 
   # Output data to the csv file
-  echo "$num_files,$depth,$num_contributors,$num_commits,$num_merges,$num_branches,$num_tags" >> ../clone_data.csv
+  echo "$num_files,$depth,$num_contributors,$num_commits,$num_merges,$num_branches,$num_tags,$README,$SECURITY,$CONDUCT,$CONTRIBUTING,$ISSUE_TEMPLATE,$PULL_TEMPLATE" >> ../clone_data.csv
 
   # Remove the cloned repository's directory
   cd ..
