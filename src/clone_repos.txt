@@ -1,0 +1,3 @@
+git@github.com:firstcontributions/first-contributions.git
+git@github.com:hackstoic/golang-open-source-projects.git
+git@github.com:twbs/bootstrap.git
