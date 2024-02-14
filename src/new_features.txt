@@ -112,7 +112,7 @@ License: ['license'] and then its another dictionary => ['spdx_id'] -------
 
 Organization? : ['organization'] -------
 Homepage? : ['homepage'] -------
-Topics? : ['topics'] => Get List
+Topics? : ['topics'] => Get List ---------
 Followers? : => https://api.github.com/users/OWNER/followers => Get Length of list
 Subscriptions? : => https://api.github.com/users/OWNER/subscriptions
 Number of Repos for User? : => https://api.github.com/users/OWNER/repos
