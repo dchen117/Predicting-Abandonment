@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Listed below are the headers to be copied to the csv file when needed
+# Number of Files,Max Depth of Files,Number of Contributors,Number of Commits,Number of Merge Commits,Number of Branches,Number of Tags,Number of Links,Has README,Has SECURITY,Has CODE_OF_CONDUCT,Has CONTRIBUTING,Has ISSUE_TEMPLATE,Has PULL_REQUEST_TEMPLATE
 
 repo_list=()
 
@@ -39,6 +41,13 @@ for i in "${repo_list[@]}"; do
 
   # Number of tags AKA releases
   num_tags=$(git tag | sort | uniq | wc -l | tr -d "[:blank:]")
+
+  # Number of Links on the README (including images)
+  COUNT_ONE=$(cat README.md | grep -o '(https' | wc -l | tr -d "[:blank:]")
+
+  COUNT_TWO=$(cat README.md | grep -o 'href' | wc -l | tr -d "[:blank:]")
+
+  num_links=$(($COUNT_ONE + $COUNT_TWO))
 
   # Presence of README and other files
   README=$(find . -name "README.md")
@@ -95,7 +104,7 @@ for i in "${repo_list[@]}"; do
   year_trends=$(git log --date=short --pretty=format:%cd | cut -d '-' -f 1 | sort | uniq -c)
 
   # Output data to the csv file
-  echo "$num_files,$depth,$num_contributors,$num_commits,$num_merges,$num_branches,$num_tags,$README,$SECURITY,$CONDUCT,$CONTRIBUTING,$ISSUE_TEMPLATE,$PULL_TEMPLATE" >> ../clone_data.csv
+  echo "$num_files,$depth,$num_contributors,$num_commits,$num_merges,$num_branches,$num_tags,$num_links,$README,$SECURITY,$CONDUCT,$CONTRIBUTING,$ISSUE_TEMPLATE,$PULL_TEMPLATE" >> ../clone_data.csv
 
   # Remove the cloned repository's directory
   cd ..
