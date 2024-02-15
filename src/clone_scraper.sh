@@ -17,7 +17,7 @@ for i in "${repo_list[@]}"; do
   git clone "$i"
 
   # Get directory name based off of SSH clone link
-  directory=$(echo "$i" | cut -d '/' -f 2 | cut -d '.' -f 1)
+  directory=$(echo "$i" | cut -d '/' -f 2 | rev | cut -c 5- | rev)
   cd $directory
 
   # Gets all files, including ones in sub-directories
@@ -42,12 +42,8 @@ for i in "${repo_list[@]}"; do
   # Number of tags AKA releases
   num_tags=$(git tag | sort | uniq | wc -l | tr -d "[:blank:]")
 
-  # Number of Links on the README (including images)
-  COUNT_ONE=$(cat README.md | grep -o '(https' | wc -l | tr -d "[:blank:]")
-
-  COUNT_TWO=$(cat README.md | grep -o 'href' | wc -l | tr -d "[:blank:]")
-
-  num_links=$(($COUNT_ONE + $COUNT_TWO))
+  # Number of Links on the README (including images) will be set later
+  num_links=0
 
   # Presence of README and other files
   README=$(find . -name "README.md")
@@ -61,7 +57,11 @@ for i in "${repo_list[@]}"; do
   if [[ -z "$README" ]]; then
     README="NO"
   else
+    # Change num_links accordingly if README file is present
     README="YES"
+    COUNT_ONE=$(cat README.md | grep -o '(https' | wc -l | tr -d "[:blank:]")
+    COUNT_TWO=$(cat README.md | grep -o 'href' | wc -l | tr -d "[:blank:]")
+    num_links=$(($COUNT_ONE + $COUNT_TWO))
   fi
 
   if [[ -z "$SECURITY" ]]; then
