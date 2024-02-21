@@ -9,7 +9,7 @@ repo_list=()
 while read -r line
 do
   repo_list+=("$line")
-done < clone_repos.txt
+done < ~/Research/Predicting-Abandonment/src/clone_repos.txt
 
 
 for i in "${repo_list[@]}"; do
@@ -46,7 +46,7 @@ for i in "${repo_list[@]}"; do
   num_links=0
 
   # Presence of README and other files
-  README=$(find . -name "README.md")
+  README=$(ls | grep -w "README" | head -1)
   SECURITY=$(find . -name "SECURITY.md")
   CONDUCT=$(find . -name "CODE_OF_CONDUCT.md")
   CONTRIBUTING=$(find . -name "CONTRIBUTING.md")
@@ -58,10 +58,10 @@ for i in "${repo_list[@]}"; do
     README="NO"
   else
     # Change num_links accordingly if README file is present
-    README="YES"
-    COUNT_ONE=$(cat README.md | grep -o '(https' | wc -l | tr -d "[:blank:]")
-    COUNT_TWO=$(cat README.md | grep -o 'href' | wc -l | tr -d "[:blank:]")
+    COUNT_ONE=$(cat $README | grep -o '(https' | wc -l | tr -d "[:blank:]")
+    COUNT_TWO=$(cat $README | grep -o 'href' | wc -l | tr -d "[:blank:]")
     num_links=$(($COUNT_ONE + $COUNT_TWO))
+    README="YES"
   fi
 
   if [[ -z "$SECURITY" ]]; then
@@ -104,7 +104,7 @@ for i in "${repo_list[@]}"; do
   year_trends=$(git log --date=short --pretty=format:%cd | cut -d '-' -f 1 | sort | uniq -c)
 
   # Output data to the csv file
-  echo "$num_files,$depth,$num_contributors,$num_commits,$num_merges,$num_branches,$num_tags,$num_links,$README,$SECURITY,$CONDUCT,$CONTRIBUTING,$ISSUE_TEMPLATE,$PULL_TEMPLATE" >> ../clone_data.csv
+  echo "$num_files,$depth,$num_contributors,$num_commits,$num_merges,$num_branches,$num_tags,$num_links,$README,$SECURITY,$CONDUCT,$CONTRIBUTING,$ISSUE_TEMPLATE,$PULL_TEMPLATE" >> ~/Research/Predicting-Abandonment/src/clone_data.csv
 
   # Remove the cloned repository's directory
   cd ..
