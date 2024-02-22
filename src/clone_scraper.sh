@@ -103,8 +103,11 @@ for i in "${repo_list[@]}"; do
   # List of commits for years
   year_trends=$(git log --date=short --pretty=format:%cd | cut -d '-' -f 1 | sort | uniq -c)
 
+  # Declare empty list to store file types and counts
+  file_types=(`find . -type f | rev | grep '.' | cut -d '.' -f 1 | rev | sort | uniq -c | awk '{$1=$1};1' | tr "[:blank:]" ":"`)
+
   # Output data to the csv file
-  echo "$num_files,$depth,$num_contributors,$num_commits,$num_merges,$num_branches,$num_tags,$num_links,$README,$SECURITY,$CONDUCT,$CONTRIBUTING,$ISSUE_TEMPLATE,$PULL_TEMPLATE" >> ~/Research/Predicting-Abandonment/src/clone_data.csv
+   echo "$num_files,$depth,$num_contributors,$num_commits,$num_merges,$num_branches,$num_tags,$num_links,$README,$SECURITY,$CONDUCT,$CONTRIBUTING,$ISSUE_TEMPLATE,$PULL_TEMPLATE,${file_types[@]}" >> ~/Research/Predicting-Abandonment/src/clone_data.csv
 
   # Remove the cloned repository's directory
   cd ..
