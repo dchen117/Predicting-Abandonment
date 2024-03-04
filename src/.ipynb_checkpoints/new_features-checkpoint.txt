@@ -1,0 +1,127 @@
+## Community/Profile (includes overall health score, the repository description, the presence of documentation, the detected code of conduct, the detected license, and the presence of ISSUE_TEMPLATE, PULL_REQUEST_TEMPLATE, README, and CONTRIBUTING files)
+
+Command: 
+curl -L \
+  -H "Accept: application/vnd.github+json" \
+  -H "Authorization: Bearer <YOUR-TOKEN>" \
+  -H "X-GitHub-Api-Version: 2022-11-28" \
+  https://api.github.com/repos/OWNER/REPO/community/profile
+
+Example:
+{
+  "health_percentage": 100,
+  "description": "My first repository on GitHub!",
+  "documentation": null,
+  "files": {
+    "code_of_conduct": {
+      "name": "Contributor Covenant",
+      "key": "contributor_covenant",
+      "url": "https://api.github.com/codes_of_conduct/contributor_covenant",
+      "html_url": "https://github.com/octocat/Hello-World/blob/master/CODE_OF_CONDUCT.md"
+    },
+    "code_of_conduct_file": {
+      "url": "https://api.github.com/repos/octocat/Hello-World/contents/CODE_OF_CONDUCT.md",
+      "html_url": "https://github.com/octocat/Hello-World/blob/master/CODE_OF_CONDUCT.md"
+    },
+    "contributing": {
+      "url": "https://api.github.com/repos/octocat/Hello-World/contents/CONTRIBUTING",
+      "html_url": "https://github.com/octocat/Hello-World/blob/master/CONTRIBUTING"
+    },
+    "issue_template": {
+      "url": "https://api.github.com/repos/octocat/Hello-World/contents/ISSUE_TEMPLATE",
+      "html_url": "https://github.com/octocat/Hello-World/blob/master/ISSUE_TEMPLATE"
+    },
+    "pull_request_template": {
+      "url": "https://api.github.com/repos/octocat/Hello-World/contents/PULL_REQUEST_TEMPLATE",
+      "html_url": "https://github.com/octocat/Hello-World/blob/master/PULL_REQUEST_TEMPLATE"
+    },
+    "license": {
+      "name": "MIT License",
+      "key": "mit",
+      "spdx_id": "MIT",
+      "url": "https://api.github.com/licenses/mit",
+      "html_url": "https://github.com/octocat/Hello-World/blob/master/LICENSE",
+      "node_id": "MDc6TGljZW5zZW1pdA=="
+    },
+    "readme": {
+      "url": "https://api.github.com/repos/octocat/Hello-World/contents/README.md",
+      "html_url": "https://github.com/octocat/Hello-World/blob/master/README.md"
+    }
+  },
+  "updated_at": "2017-02-28T19:09:29Z",
+  "content_reports_enabled": true
+}
+
+## Weekly Commit Count
+
+Command:
+curl -L \
+  -H "Accept: application/vnd.github+json" \
+  -H "Authorization: Bearer <YOUR-TOKEN>" \
+  -H "X-GitHub-Api-Version: 2022-11-28" \
+  https://api.github.com/repos/OWNER/REPO/stats/participation
+
+Example:
+{
+  "all": [
+    11,
+    21,
+    15,
+    2,
+    8,
+    1,
+    8
+  ],
+  "owner": [
+    3,
+    2,
+    3,
+    0,
+    2
+  ]
+}
+
+## Some Other Features
+
+Within the json response returned by a GET request to https://api.github.com/repos/OWNER/REPO
+
+Command: repo_info.get("{FEATURE}", "None")
+
+{FEATURES}:
+
+Stars: ['stargazers_count'] ----
+Watches: ['subscribers_count'] ----
+Size: ['size'] ----
+Has A Wiki Page: ['has_wiki'] (boolean variable) ----
+Open Issues: ['open_issues_count'] ----
+Forks: ['forks_count'] ----
+Created Date: ['created_at'] ----
+Last Update: ['updated_at'] ----
+Last Push: ['pushed_at'] ----
+Language: ['language'] ----
+Has Discussions: ['has_discussions'] (boolean) ----
+Has Pages: ['has_pages'] (boolean) ----
+Archived: ['archived'] (boolean) ----
+Has Projects: ['has_projects'] (boolean) ----
+Contributors: => https://api.github.com/repos/OWNER/REPO/contributors => Get Length of List
+Commits: => https://api.github.com/repos/OWNER/REPO/commits => Get Length of List
+
+
+
+License: ['license'] and then its another dictionary => ['spdx_id'] -------
+
+Organization? : ['organization'] -------
+Homepage? : ['homepage'] -------
+Topics? : ['topics'] => Get List ---------
+Followers? : => https://api.github.com/users/OWNER/followers => Get Length of list
+Subscriptions? : => https://api.github.com/users/OWNER/subscriptions
+Number of Repos for User? : => https://api.github.com/users/OWNER/repos
+Events or Issues? : https://api.github.com/repos/OWNER/REPO/issues/events
+This one Issues? : https://api.github.com/repos/OWNER/REPO/issues
+Pulls? : https://api.github.com/repos/OWNER/REPO/pulls
+Milestones? : https://api.github.com/repos/OWNER/REPO/milestones
+Labels? : https://api.github.com/repos/OWNER/REPO/labels
+
+
+
+
