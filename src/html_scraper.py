@@ -9,6 +9,18 @@ import time
 from bs4 import BeautifulSoup
 import threading
 from concurrent.futures import ThreadPoolExecutor
+import sys
+
+# Get command line arguments
+if len(sys.argv) != 5:
+  print("Usage: [import_file] [export_file] [start_index] [end_index]")
+  exit()
+
+# Skip first index which is script name
+import_file = str(sys.argv[1])
+export_file = str(sys.argv[2])
+start_index = int(sys.argv[3])
+end_index = int(sys.argv[4])
 
 # Declare list to be used to store projects that failed to collect any information
 error_projects = []
@@ -56,7 +68,7 @@ def scrape_page(project_url):
     # Get number of watches and sponsors
     # Wait for the document to be in 'complete' state
     WebDriverWait(driver, 10).until(
-        EC.visibility_of_element_located((By.TAG_NAME, 'footer'))
+        EC.visibility_of_element_located((By.TAG_NAME, 'body'))
     )
 
     # Parse HTML
@@ -80,7 +92,7 @@ def scrape_page(project_url):
 
     # Wait for the document to be in 'complete' state
     WebDriverWait(driver, 10).until(
-        EC.visibility_of_element_located((By.TAG_NAME, 'footer'))
+        EC.visibility_of_element_located((By.TAG_NAME, 'body'))
     )
 
     html = driver.page_source
@@ -229,9 +241,9 @@ def scrape_page(project_url):
 
 # RUNNING CODE
 # Read in the excel file consisting of projects to scrape
-project_list = pd.read_excel('project_5000Up.xlsx')
+project_list = pd.read_excel(import_file)
 project_list = project_list['Project URL'].tolist()
-project_list = project_list[:100]
+project_list = project_list[start_index:end_index]
 
 
 # Create list to store features scraped and execute the function above to scrape the features
@@ -272,4 +284,4 @@ projects_df = pd.DataFrame(projects, columns=['Project URL',
 
 
 # Export to excel file
-# try: with pd.ExcelWriter( "project_HTMLfeatures.xlsx", mode="a", engine="openpyxl", if_sheet_exists="overlay", ) as writer: projects_df.to_excel(writer,sheet_name="Sheet1", startrow=writer.sheets["Sheet1"].max_row, index = False,header= False) except FileNotFoundError: projects_df.to_excel("project_HTMLfeatures.xlsx", index=False)
+# try: with pd.ExcelWriter(export_file, mode="a", engine="openpyxl", if_sheet_exists="overlay", ) as writer: projects_df.to_excel(writer,sheet_name="Sheet1", startrow=writer.sheets["Sheet1"].max_row, index = False,header= False) except FileNotFoundError: projects_df.to_excel(export_file, index=False)

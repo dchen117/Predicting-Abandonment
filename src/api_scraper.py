@@ -4,6 +4,17 @@ import pandas as pd
 import time
 import os
 import math
+import sys
+
+# Get the command line arguments
+if len(sys.argv) != 4:
+  print("Usage: [export_file] [low_stars] [high_stars]")
+  exit()
+ 
+export_file = str(sys.argv[1])
+low_stars = int(sys.argv[2])
+high_stars = int(sys.argv[3])
+
 
 # Declare lists to store feature data
 repo_url= []
@@ -158,7 +169,7 @@ def get_projects(low, high):
 
 
 # Call the above function to begin scraping
-get_projects(100,178)
+get_projects(low_stars,high_stars)
 
 
 
@@ -192,11 +203,11 @@ projects_df = pd.DataFrame({'Project URL':repo_url,
 # CHANGE THE EXPORTED FILE NAME ACCORDINGLY
 try:
     with pd.ExcelWriter(
-        "project_100..679.xlsx",
+        export_file,
         mode="a",
         engine="openpyxl",
         if_sheet_exists="overlay",
     ) as writer:
          projects_df.to_excel(writer,sheet_name="Sheet1", startrow=writer.sheets["Sheet1"].max_row, index = False,header= False)
 except FileNotFoundError:
-    projects_df.to_excel("project_100..679.xlsx", index=False)
+    projects_df.to_excel(export_file, index=False)
