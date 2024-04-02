@@ -14,7 +14,7 @@ done < ~/Research/Predicting-Abandonment/src/clone_repos.txt
 
 for i in "${repo_list[@]}"; do
   echo "$i"
-  git clone "$i"
+  git clone --filter=blob:none "$i"
 
   # Get directory name based off of SSH clone link
   directory=$(echo "$i" | cut -d '/' -f 2 | rev | cut -c 5- | rev)
