@@ -7,13 +7,14 @@ import math
 import sys
 
 # Get the command line arguments
-if len(sys.argv) != 4:
-  print("Usage: [export_file] [low_stars] [high_stars]")
+if len(sys.argv) != 5:
+  print("Usage: [export_file] [low_stars] [high_stars] [access_token]")
   exit()
  
 export_file = str(sys.argv[1])
 low_stars = int(sys.argv[2])
 high_stars = int(sys.argv[3])
+access_token = str(sys.argv[4])
 
 
 # Declare lists to store feature data
