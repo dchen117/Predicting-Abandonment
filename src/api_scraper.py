@@ -4,23 +4,28 @@ import pandas as pd
 import time
 import os
 import math
+import datetime
+import subprocess
 import sys
 
 # Get the command line arguments
-if len(sys.argv) != 5:
-  print("Usage: [export_file] [low_stars] [high_stars] [access_token]")
+if len(sys.argv) != 6:
+  print("Usage: [export_file] [projects_file] [low_stars] [high_stars] [access_token]")
   exit()
  
 export_file = str(sys.argv[1])
-low_stars = int(sys.argv[2])
-high_stars = int(sys.argv[3])
-access_token = str(sys.argv[4])
+projects_file = str(sys.argv[2])
+low_stars = int(sys.argv[3])
+high_stars = int(sys.argv[4])
+access_token = str(sys.argv[5])
 
+projects = pd.read_excel(projects_file)
+project_list = projects.iloc[:, 0].tolist()
+project_set = set(project_list)
 
 # Declare lists to store feature data
 repo_url= []
 repo_stars = []
-#repo_watches = []
 repo_wiki = []
 repo_open_issues = []
 repo_forks = []
@@ -39,14 +44,43 @@ repo_org = []
 repo_topics = []
 repo_ssh_url = []
 
+# Function for collecting SBOMs
+def collect_sbom(project_list, dir_path):
+    for project in project_list:
+        owner_repo = project[19:]
+        sbom_url = f"https://api.github.com/repos/{owner_repo}/dependency-graph/sbom"
+        file_name = owner_repo.split('/')
+        file_name = f"{file_name[0]}_{file_name[1]}_sbom.json"
+        print(file_name)
+        
+        headers = {
+            'Accept': 'application/vnd.github+json',
+            'Authorization': 'Bearer ' + access_token,
+            'X-GitHub-Api-Version': '2022-11-28',
+        }
+        response = requests.get(sbom_url, headers=headers)
+        if response.status_code == 200:
+            with open(f"{dir_path}/{file_name}", "wb") as file:
+                file.write(response.content)
+            print(f"{project}: SBOM downloaded")
+        else:
+            print(f"{project}: SBOM download failed")
 
+# Collecting SBOMs and storing them in a sbom directory
+current_dir = os.getcwd()
+date = datetime.date.today()
+dir_name = f"sbom_{date}"
+if not os.path.exists(dir_name): 
+    os.makedirs(dir_name)
+sbom_dir = f"{current_dir}/{dir_name}"
+collect_sbom(project_list, sbom_dir)
 
 # Function used to scrape the data using the Github API
-def get_github_repo_info(search_filter, page_number):
+def get_github_repo_info(search_filter, page_number, project_set):
     api_url = f"https://api.github.com/search/repositories?q="+str(search_filter)+"&page="+str(page_number)+"&per_page=100"
 
     headers = {
-    "Authorization": f"Bearer ",
+    "Authorization": "Bearer " + access_token,
     "Accept": "application/vnd.github.v3+json"
     }
 
@@ -68,6 +102,15 @@ def get_github_repo_info(search_filter, page_number):
         num_repos = response.json()['total_count']
 
         for repo_info in repo_list:
+
+            # Only scrapes repo if it is in project_set
+            if not project_set:
+                break
+            repo_name = repo_info.get("full_name", "Name not found")
+            if f"https://github.com/{repo_name}" in project_set:
+                project_set.remove(f"https://github.com/{repo_name}")
+            else:
+                continue
 
             # Extract and print relevant information
             repo_url.append(repo_info.get("html_url", "URL not found"))
@@ -114,7 +157,7 @@ def get_github_repo_info(search_filter, page_number):
 
 
 # Function used to facilitate scraping by changing search filters for number of stars, and some of them created date
-def get_projects(low, high):
+def get_projects(low, high, project_set):
     # Variable for determining range of projects
     decrement = 500
     # While loop to go through each range from low to high
@@ -146,31 +189,31 @@ def get_projects(low, high):
                 year = 2024 - i
                 created_date = "+created%3A" + str(year) + "-01-01.." + str(year) + "-12-31"
                 print(high-decrement, high-1, year, 1)
-                return_value = get_github_repo_info("stars%3A"+str(high-decrement)+'..'+str(high-1)+created_date, 1)
+                return_value = get_github_repo_info("stars%3A"+str(high-decrement)+'..'+str(high-1)+created_date, 1, project_set)
                 # For loop to run function to get features
                 for page_number in range(2,math.ceil(return_value/100)+1):
                     print(high-decrement, high-1, page_number)
-                    return_value = get_github_repo_info("stars%3A"+str(high-decrement)+'..'+str(high-1)+created_date, page_number)
+                    return_value = get_github_repo_info("stars%3A"+str(high-decrement)+'..'+str(high-1)+created_date, page_number, project_set)
             # One more request for all projects <=2015
             created_date = "+created%3A<=2015-12-31"
             print(high-decrement, high-1, 2015, 1)
-            return_value = get_github_repo_info("stars%3A"+str(high-decrement)+'..'+str(high-1)+created_date, 1)
+            return_value = get_github_repo_info("stars%3A"+str(high-decrement)+'..'+str(high-1)+created_date, 1, project_set)
             for page_number in range(2,math.ceil(return_value/100)+1):
                 print(high-decrement, high-1, 2015, page_number)
-                return_value = get_github_repo_info("stars%3A"+str(high-decrement)+'..'+str(high-1)+created_date, page_number)
+                return_value = get_github_repo_info("stars%3A"+str(high-decrement)+'..'+str(high-1)+created_date, page_number, project_set)
         else:
             print(high-decrement, high-1, 1)
-            return_value = get_github_repo_info("stars%3A"+str(high-decrement)+'..'+str(high-1), 1)
+            return_value = get_github_repo_info("stars%3A"+str(high-decrement)+'..'+str(high-1), 1, project_set)
             for page_number in range(2,math.ceil(return_value/100)+1):
                 # For loop to run function to get features
                 print(high-decrement, high-1, page_number)
-                return_value = get_github_repo_info("stars%3A"+str(high-decrement)+'..'+str(high-1), page_number)
+                return_value = get_github_repo_info("stars%3A"+str(high-decrement)+'..'+str(high-1), page_number, project_set)
         high -= decrement
 
 
 
 # Call the above function to begin scraping
-get_projects(low_stars,high_stars)
+get_projects(low_stars,high_stars,project_set)
 
 
 
