@@ -12,6 +12,7 @@ from bs4 import BeautifulSoup
 import threading
 from concurrent.futures import ThreadPoolExecutor
 import multiprocessing
+import sys
 
 # Get command line arguments
 if len(sys.argv) != 5:
@@ -115,18 +116,21 @@ def scrape_owner(project_url, driver):
 
     # Number of Owner Members
     members = soup.find('span', class_='Counter js-profile-member-count')
-
+    print(f"{project} Members: {members} stuff")
     if members != None:
-        while members.text == "":
-            driver.get(owner_url)
-            WebDriverWait(driver, 10).until(
-                EC.visibility_of_element_located((By.TAG_NAME, 'body'))
-            )
-
-            html = driver.page_source
-            soup = BeautifulSoup(html, "html.parser")
-            time.sleep(5)
-            members = soup.find('span', class_='Counter js-profile-member-count')
+      while members.text == "":
+        print(f"{project} is getting members!")
+        driver.get(owner_url)
+        WebDriverWait(driver, 10).until(
+          EC.visibility_of_element_located((By.TAG_NAME, 'body'))
+        )
+        time.sleep(5)
+        html = driver.page_source
+        soup = BeautifulSoup(html, "html.parser")
+        members = soup.find('span', class_='Counter js-profile-member-count')
+        if members == None:
+          break
+      if members != None:
         members = members.text.split()[0]
 
     print(f"{project_url} members: {members}")
@@ -354,29 +358,33 @@ def scrape_project_list(project_list):
         features = p.map(scrape_project, project_list)
         for f in features:
             projects.append(f)
-    return project
+    return projects
 
 
 # MAIN
 # Time counter used to keep track of runtime for program
-start_time = time.time()
+if __name__ == '__main__':
+  start_time = time.time()
 
-# Dividing up list into sublists for multi-processing
-list_len = len(project_list)
-sub_len = list_len // 3
-sublists = [project_list[i:i+sub_len] for i in range(0, list_len, sub_len)]
-pool = multiprocessing.Pool(processes=3)
-results = pool.map(scrape_project_list, sublists)
-projects = []
-for result in results:
+  # Dividing up list into sublists for multi-processing
+  list_len = len(project_list)
+  sub_len = list_len // 3
+  sublists = [project_list[i:i+sub_len] for i in range(0, list_len, sub_len)]
+  #pool = multiprocessing.Pool(processes=3)
+  #results = pool.map(scrape_project_list, sublists)
+  #results = scrape_project_list(project_list)
+  print(scrape_project("https://github.com/public-apis/public-apis"))
+  results = []
+  projects = []
+  for result in results:
     projects.extend(result)
-end_time = time.time()
+  end_time = time.time()
 
-elapsed_time = end_time - start_time
-print(f"elapsed time is {elapsed_time}")
+  elapsed_time = end_time - start_time
+  print(f"elapsed time is {elapsed_time}")
 
-# Save the data in a pandas Dataframe
-projects_df = pd.DataFrame(projects, columns=['Project URL',
+  # Save the data in a pandas Dataframe
+  projects_df = pd.DataFrame(projects, columns=['Project URL',
                                               'Open Pull Requests',
                                               'Closed Pull Requests',
                                               'Verified Owner',
@@ -397,17 +405,17 @@ projects_df = pd.DataFrame(projects, columns=['Project URL',
                                               'Number of Dependents'
                                              ])
 
-# Print out dataframe for testing purposes
-projects_df
+  # Print out dataframe for testing purposes
+  print(projects_df)
 
 # Export dataframe to an Excel file
-try:
-    with pd.ExcelWriter(
-        export_file,
-        mode="a",
-        engine="openpyxl",
-        if_sheet_exists="overlay",
-    ) as writer:
-         projects_df.to_excel(writer,sheet_name="Sheet1", startrow=writer.sheets["Sheet1"].max_row, index = False,header= False)
-except FileNotFoundError:
-    projects_df.to_excel(export_file, index=False)
+#try:
+#    with pd.ExcelWriter(
+#        export_file,
+#        mode="a",
+#        engine="openpyxl",
+#        if_sheet_exists="overlay",
+#    ) as writer:
+#         projects_df.to_excel(writer,sheet_name="Sheet1", startrow=writer.sheets["Sheet1"].max_row, index = False,header= False)
+#except FileNotFoundError:
+#    projects_df.to_excel(export_file, index=False)
