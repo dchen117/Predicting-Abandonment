@@ -372,19 +372,19 @@ if __name__ == '__main__':
   sublists = [project_list[i:i+sub_len] for i in range(0, list_len, sub_len)]
   #pool = multiprocessing.Pool(processes=3)
   #results = pool.map(scrape_project_list, sublists)
-  #results = scrape_project_list(project_list)
-  print(scrape_project("https://github.com/public-apis/public-apis"))
-  results = []
-  projects = []
-  for result in results:
-    projects.extend(result)
-  end_time = time.time()
+  results = scrape_project_list(project_list)
+  #print(scrape_project("https://github.com/public-apis/public-apis"))
+  #results = []
+  #projects = []
+  #for result in results:
+  #  projects.extend(result)
+  #end_time = time.time()
 
   elapsed_time = end_time - start_time
   print(f"elapsed time is {elapsed_time}")
 
   # Save the data in a pandas Dataframe
-  projects_df = pd.DataFrame(projects, columns=['Project URL',
+  projects_df = pd.DataFrame(results, columns=['Project URL',
                                               'Open Pull Requests',
                                               'Closed Pull Requests',
                                               'Verified Owner',
