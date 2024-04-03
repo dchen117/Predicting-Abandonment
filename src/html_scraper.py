@@ -1,15 +1,17 @@
+# Import all the Python libraries
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import WebDriverException
 import pandas as pd
 import time
 from bs4 import BeautifulSoup
 import threading
 from concurrent.futures import ThreadPoolExecutor
-import sys
+import multiprocessing
 
 # Get command line arguments
 if len(sys.argv) != 5:
@@ -22,10 +24,15 @@ export_file = str(sys.argv[2])
 start_index = int(sys.argv[3])
 end_index = int(sys.argv[4])
 
-# Declare list to be used to store projects that failed to collect any information
-error_projects = []
+# Read in the import/Excel file and get the project URLs
+project_list = pd.read_excel(import_file)
+project_list = project_list['Project URL'].tolist()
 
-# Chrome options to be added
+# Scrape a specific range of the projects
+project_list = project_list[start_index:end_index]
+
+# Chrome options to be added for Selenium Driver to speed up data collection speed
+# Includes: Headless mode and no images
 chrome_options = Options()
 chrome_options.add_argument("--disable-extensions")
 chrome_options.add_argument("--disable-gpu")
@@ -47,22 +54,191 @@ chrome_options.add_argument("--silent")
 chrome_options.add_argument("--blink-settings=imagesEnabled=false")
 
 
-# Declare function to scrape the features for each project
-def scrape_page(project_url):
+# BELOW: Defining individual functions to isolate pages used to scrape features
+
+# Scrapes pull requests page
+def scrape_prs(project_url, driver):
+    project = project_url[19:]
+    # Pull Requests
+    pull_url = project_url + "/pulls"
+
+    for i in range(0,10):
+        driver.get(pull_url)
+        # Wait for the document to be in 'complete' state
+        WebDriverWait(driver, 10).until(
+            EC.visibility_of_element_located((By.TAG_NAME, 'body'))
+        )
+        html = driver.page_source
+        soup = BeautifulSoup(html,"html.parser")
+
+        open_prs = soup.find(href=f"/{project}/pulls?q=is%3Aopen+is%3Apr")
+        close_prs = soup.find(href=f"/{project}/pulls?q=is%3Apr+is%3Aclosed")
+        if open_prs != None and close_prs != None:
+            open_prs = open_prs.text.split()[0]
+            close_prs = close_prs.text.split()[0]
+            print(f"{project_url}: {open_prs} open_prs and {close_prs} close_prs")
+            return [open_prs, close_prs]
+        else:
+            time.sleep(10)
+    print(f"{project_url}: open_prs and close_prs not found")
+    return [None, None]
+
+# Scrape owner's page for info like followers, members etc.
+def scrape_owner(project_url, driver):
+    project = project_url[19:]
+    creator = project.split('/')[0]
+
+    # Verified Repo Owner
+    owner_url = f"https://github.com/{creator}"
+    driver.get(owner_url)
+
+    # Wait for the document to be in 'complete' state
+    WebDriverWait(driver, 10).until(
+        EC.visibility_of_element_located((By.TAG_NAME, 'body'))
+    )
+
+    html = driver.page_source
+    soup = BeautifulSoup(html, "html.parser")
+    #print(soup.prettify())
+
+    verified = soup.find('summary', {'title': 'Label: Verified'})
+    if verified != None:
+        verified = verified.text.split()[0]
+
+    print(f"{project_url} owner status: {verified}")
+
+    # Number of Owner Followers
+    followers = soup.find('a', class_='Link--secondary no-underline no-wrap')
+    if followers != None:
+        followers = followers.text.split()[0]
+    print(f"{project_url} followers: {followers}")
+
+    # Number of Owner Members
+    members = soup.find('span', class_='Counter js-profile-member-count')
+
+    if members != None:
+        while members.text == "":
+            driver.get(owner_url)
+            WebDriverWait(driver, 10).until(
+                EC.visibility_of_element_located((By.TAG_NAME, 'body'))
+            )
+
+            html = driver.page_source
+            soup = BeautifulSoup(html, "html.parser")
+            time.sleep(5)
+            members = soup.find('span', class_='Counter js-profile-member-count')
+        members = members.text.split()[0]
+
+    print(f"{project_url} members: {members}")
+
+    # Number of Other Repositories by Owner
+    repositories = soup.find('span', class_='Counter js-profile-repository-count')
+    if repositories == None:
+        repositories = soup.find_all('span', class_='Counter')[0]
+
+    if repositories != None:
+        repositories = repositories.text.split()[0]
+    print(f"{project_url} repositories: {repositories}")
+
+    return [verified, followers, members, repositories]
+
+
+# Scrape insights page: active prs and active issues
+def scrape_insight(project_url, driver):
+    project = project_url[19:]
+    creator = project.split('/')[0]
+
+    # Active prs and active issues
+    insight_url = f"{project_url}/pulse"
+    driver.get(insight_url)
+
+    # Wait for the document to be in 'complete' state
+    WebDriverWait(driver, 10).until(
+        EC.visibility_of_element_located((By.TAG_NAME, 'body'))
+    )
+
+    html = driver.page_source
+    soup = BeautifulSoup(html, "html.parser")
+
+    active = soup.find_all('div', class_='mt-2')
+    active_prs = active[0]
+    active_issues = active[1]
+
+    if active_prs != None:
+        active_prs = active_prs.text.split()[0]
+
+    if active_issues != None:
+        active_issues = active_issues.text.split()[0]
+
+    print(f"{project_url}: {active_prs} Active pull requests, {active_issues} Active issues")
+    return [active_prs, active_issues]
+
+
+# Scrape issues page
+def scrape_issues(project_url, driver):
+    project = project_url[19:]
+    # Issues
+    issue_url = project_url + "/issues"
+
+    for i in range(0,10):
+        driver.get(issue_url)
+
+        # Wait for the document to be in 'complete' state
+        WebDriverWait(driver, 10).until(
+            EC.visibility_of_element_located((By.TAG_NAME, 'body'))
+        )
+
+        html = driver.page_source
+        soup = BeautifulSoup(html,"html.parser")
+
+        open_issues = soup.find(href=f"/{project}/issues?q=is%3Aopen+is%3Aissue")
+        closed_issues = soup.find(href=f"/{project}/issues?q=is%3Aissue+is%3Aclosed")
+
+        num_labels = soup.find(href=f"/{project}/labels")
+        num_milestones = soup.find(href=f"/{project}/milestones")
+
+        if open_issues != None:
+            open_issues = open_issues.text.split()[0]
+            closed_issues = closed_issues.text.split()[0]
+            num_labels = num_labels.find("span").text
+            num_milestones = num_milestones.find("span").text
+            break
+        else:
+            time.sleep(10)
+
+    if type(num_labels) != int:
+        # labels
+        driver.get(project_url + '/labels')
+        WebDriverWait(driver, 10).until(
+            EC.visibility_of_element_located((By.TAG_NAME, 'body'))
+        )
+        html = driver.page_source
+        soup = BeautifulSoup(html,"html.parser")
+        num_labels = soup.find('span', class_='js-labels-count')
+        num_labels = num_labels.text.split()[0]
+
+        # milestones
+        driver.get(project_url + '/milestones')
+        WebDriverWait(driver, 10).until(
+            EC.visibility_of_element_located((By.TAG_NAME, 'body'))
+        )
+        html = driver.page_source
+        soup = BeautifulSoup(html,"html.parser")
+        num_milestones = soup.find('a', class_='btn-link selected').text.split()[0]
+
+    print(f"{project_url}, Open issues: {open_issues}, Closed issues: {closed_issues}, Labels: {num_labels}, Milestones: {num_milestones}")
+    return [open_issues, closed_issues, num_labels, num_milestones]
+
+
+# Scrape main/code page of repository
+def scrape_page(project_url, driver):
 
     project_features = []
 
-    print(project_url)
-    # Add url to list
-    project_features.append(project_url)
-
     # Get the OWNER/REPO
     project = project_url[19:]
-    print(project)
 
     # Set up Web Driver
-    driver = webdriver.Chrome(options=chrome_options)
-
     driver.get(project_url)
 
     # Get number of watches and sponsors
@@ -72,7 +248,6 @@ def scrape_page(project_url):
     )
 
     # Parse HTML
-    # Get number of watches and sponsered?
     html = driver.page_source
     soup = BeautifulSoup(html,"html.parser")
 
@@ -81,74 +256,35 @@ def scrape_page(project_url):
     creator = project.split('/')[0]
     sponsored = "Yes" if soup.find(href=f"/sponsors/{creator}") != None else "No"
 
-    project_features.append(num_watches)
+    if sponsored == "Yes":
+        #for i in range(0,10):
+        driver.get(f"https://github.com/sponsors/{creator}")
+        WebDriverWait(driver, 10).until(
+            EC.visibility_of_element_located((By.TAG_NAME, 'body'))
+        )
+        html = driver.page_source
+        soup = BeautifulSoup(html,"html.parser")
+
+        current_sponsors = soup.find(lambda tag: tag.name == 'h4' and 'Current sponsors' in tag.get_text())
+        past_sponsors = soup.find(lambda tag: tag.name == 'h4' and 'Past sponsors' in tag.get_text())
+
+        if current_sponsors == None:
+            current_sponsors = soup.find('p', class_='f3-light color-fg-muted mb-3')
+            current_sponsors = current_sponsors.text.split()[0]
+            past_sponsors = 0
+        else:
+            current_sponsors = current_sponsors.text.split()[2]
+            past_sponsors = past_sponsors.text.split()[2]
+
+    else:
+        current_sponsors = 0
+        past_sponsors = 0
+
+    print(f"{project_url}: {current_sponsors} Current sponsors, {past_sponsors} Past sponsors")
     project_features.append(sponsored)
-
-    # Issues
-    #thread = threading.Thread(name=watch_sponsors,target=issues(project_url, project, driver))
-    #thread.start()
-    issue_url = project_url + "/issues"
-    driver.get(issue_url)
-
-    # Wait for the document to be in 'complete' state
-    WebDriverWait(driver, 10).until(
-        EC.visibility_of_element_located((By.TAG_NAME, 'body'))
-    )
-
-    html = driver.page_source
-    soup = BeautifulSoup(html,"html.parser")
-
-    open_issues = None if soup.find(href=f"/{project}/issues?q=is%3Aopen+is%3Aissue") == None else soup.find(href=f"/{project}/issues?q=is%3Aopen+is%3Aissue").text.split()[0]
-    closed_issues = None if soup.find(href=f"/{project}/issues?q=is%3Aissue+is%3Aclosed") == None else soup.find(href=f"/{project}/issues?q=is%3Aissue+is%3Aclosed").text.split()[0]
-    num_labels = None if soup.find(href=f"/{project}/labels") == None else soup.find(href=f"/{project}/labels").find("span").text
-    num_milestones = None if soup.find(href=f"/{project}/milestones") == None else soup.find(href=f"/{project}/milestones").find("span").text
-
-
-    project_features.append(open_issues)
-    project_features.append(closed_issues)
-    project_features.append(num_labels)
-    project_features.append(num_milestones)
-
-    print(f"Project:{project_url}, Open issues: {open_issues}, Closed issues: {closed_issues}")
-
-    # Pull Requests
-    pull_url = project_url + "/pulls"
-    driver.get(pull_url)
-
-    # Wait for the document to be in 'complete' state
-    WebDriverWait(driver, 10).until(
-        EC.visibility_of_element_located((By.TAG_NAME, 'footer'))
-    )
-
-    html = driver.page_source
-    soup = BeautifulSoup(html,"html.parser")
-
-    #print(f"Getting prs: {project}")
-    #open_prs = soup.find(href=f"/{project}/pulls?q=is%3Aopen+is%3Apr")
-    #if open_prs != None:
-     #   open_prs = open_prs.text.split()[0]
-    #else:
-     #   count = 0
-      #  while count < 4 and open_prs == None:
-       #     driver.get(pull_url)
-        #    # Wait for the document to be in 'complete' state
-         #   WebDriverWait(driver, 10).until(
-         #       EC.visibility_of_element_located((By.TAG_NAME, 'body'))
-          #  )
-          #  html = driver.page_source
-           # soup = BeautifulSoup(html, "html.parser")
-           # open_prs = soup.find(href=f"/{project}/pulls?q=is%3Aopen+is%3Apr")
-           # count += 1
-       # if open_prs == None:
-       #     return [None, project_url]
-       # else:
-        #    open_prs = open_prs.text.split()[0]
-    #closed_prs = soup.find(href=f"/{project}/pulls?q=is%3Apr+is%3Aclosed").text.split()[0]
-
-    #print(f"Getting prs: {project} Open={open_prs} Closed={closed_prs}")
-
-    #project_features.append(open_prs)
-    #project_features.append(closed_prs)
+    project_features.append(current_sponsors)
+    project_features.append(past_sponsors)
+    project_features.append(num_watches)
 
     # Number of Workflow Runs
     workflow_url = project_url + "/actions"
@@ -156,7 +292,7 @@ def scrape_page(project_url):
 
     # Wait for the document to be in 'complete' state
     WebDriverWait(driver, 10).until(
-        EC.visibility_of_element_located((By.TAG_NAME, 'footer'))
+        EC.visibility_of_element_located((By.TAG_NAME, 'body'))
     )
 
     html = driver.page_source
@@ -165,7 +301,6 @@ def scrape_page(project_url):
     workflow = soup.find(lambda tag: tag.name == 'strong' and 'workflow runs' in tag.get_text())
     if workflow != None:
         workflow = workflow.text.split()[0]
-    print(f"workflow: {workflow}")
 
     project_features.append(workflow)
 
@@ -175,7 +310,7 @@ def scrape_page(project_url):
 
     # Wait for the document to be in 'complete' state
     WebDriverWait(driver, 10).until(
-        EC.visibility_of_element_located((By.TAG_NAME, 'footer'))
+        EC.visibility_of_element_located((By.TAG_NAME, 'body'))
     )
 
     html = driver.page_source
@@ -185,103 +320,94 @@ def scrape_page(project_url):
     if dependents != None:
         dependents = dependents.text.split()[0]
 
-    print(f"dependents: {dependents}")
-
     project_features.append(dependents)
-
-    # Verified Repo Owner
-    owner_url = f"https://github.com/{creator}"
-    print(owner_url)
-    driver.get(owner_url)
-
-    # Wait for the document to be in 'complete' state
-    WebDriverWait(driver, 10).until(
-        EC.visibility_of_element_located((By.TAG_NAME, 'footer'))
-    )
-
-    html = driver.page_source
-    soup = BeautifulSoup(html, "html.parser")
-
-    verified = soup.find('summary', {'title': 'Label: Verified'})
-    if verified != None:
-        verified = verified.text.split()[0]
-
-    print(verified)
-    project_features.append(verified)
-
-    # Number of Owner Followers
-    #followers = soup.find('a', class_='Link--secondary no-underline no-wrap')
-    #if followers != None:
-      #  followers = followers.text.split()[0]
-   # else:
-      #  count = 0
-       # while count < 4 and followers == None:
-        #    driver.get(owner_url)
-         #   # Wait for the document to be in 'complete' state
-          #  WebDriverWait(driver, 10).until(
-           #     EC.visibility_of_element_located((By.TAG_NAME, 'body'))
-            #)
-           # html = driver.page_source
-           # soup = BeautifulSoup(html, "html.parser")
-           # followers = soup.find('a', class_='Link--secondary no-underline no-wrap')
-           # count += 1
-        #if followers == None:
-       #     return [None, project_url]
-        #else:
-         #   followers = followers.text.split()[0]
-    #print(f"followers: {followers}")
-
-    #project_features.append(followers)
-
-    # Clean close the Web Session and window(s)
-    driver.quit()
+    print(f"{project_url} {dependents} dependents, {workflow} workflows")
 
     return project_features
 
 
-# RUNNING CODE
-# Read in the excel file consisting of projects to scrape
-project_list = pd.read_excel(import_file)
-project_list = project_list['Project URL'].tolist()
-project_list = project_list[start_index:end_index]
+# Define function to be used to scrape each of the above pages and combine their results
+def scrape_project(project_url):
+    project = [project_url]
+
+    driver = webdriver.Chrome(options=chrome_options)
+    prs = scrape_prs(project_url, driver)
+    time.sleep(1)
+    owner = scrape_owner(project_url, driver)
+    time.sleep(1)
+    insight = scrape_insight(project_url, driver)
+    time.sleep(1)
+    issues = scrape_issues(project_url, driver)
+    time.sleep(1)
+    page = scrape_page(project_url, driver)
+
+    driver.quit()
+
+    project = project + prs + owner + insight + issues + page
+    return project
 
 
-# Create list to store features scraped and execute the function above to scrape the features
-projects = []
-low = 0
-high = 10
-with ThreadPoolExecutor(max_workers=10) as p:
-    while high <= len(project_list):
-        features = p.map(scrape_page, project_list[low:high])
-        print(high)
+# Define function that will use threads to scrape each project in the sublist passed to it
+def scrape_project_list(project_list):
+    projects = []
+    with ThreadPoolExecutor(max_workers=10) as p:
+        features = p.map(scrape_project, project_list)
         for f in features:
-            if f[0] != None:
-                projects.append(f)
-            else:
-                error_projects.append(f[1])
+            projects.append(f)
+    return project
 
-        low += 10
-        high += 10
-        time.sleep(2)
 
-# Create pandas DataFrame to store the data
+# MAIN
+# Time counter used to keep track of runtime for program
+start_time = time.time()
+
+# Dividing up list into sublists for multi-processing
+list_len = len(project_list)
+sub_len = list_len // 3
+sublists = [project_list[i:i+sub_len] for i in range(0, list_len, sub_len)]
+pool = multiprocessing.Pool(processes=3)
+results = pool.map(scrape_project_list, sublists)
+projects = []
+for result in results:
+    projects.extend(result)
+end_time = time.time()
+
+elapsed_time = end_time - start_time
+print(f"elapsed time is {elapsed_time}")
+
+# Save the data in a pandas Dataframe
 projects_df = pd.DataFrame(projects, columns=['Project URL',
-                                              'Number of Watches',
-                                              'Sponsored',
+                                              'Open Pull Requests',
+                                              'Closed Pull Requests',
+                                              'Verified Owner',
+                                              'Followers of Owner',
+                                              'Members of Owner',
+                                              'Repos of Owner',
+                                              'Active Pull Requests',
+                                              'Active Issues',
                                               'Open Issues',
                                               'Closed Issues',
                                               'Number of Labels',
                                               'Number of Milestones',
-                                              #'Open Pull Requests',
-                                              #'Closed Pull Requests',
+                                              'Sponsored',
+                                              'Current Sponsors',
+                                              'Past Sponsors',
+                                              'Number of Watches',
                                               'Number of Workflow Runs',
-                                              'Number of Dependents',
-                                              'Verified Owner',
-                                              #'Followers of Owner'
+                                              'Number of Dependents'
                                              ])
-# For printing data frame
-# projects_df
 
+# Print out dataframe for testing purposes
+projects_df
 
-# Export to excel file
-# try: with pd.ExcelWriter(export_file, mode="a", engine="openpyxl", if_sheet_exists="overlay", ) as writer: projects_df.to_excel(writer,sheet_name="Sheet1", startrow=writer.sheets["Sheet1"].max_row, index = False,header= False) except FileNotFoundError: projects_df.to_excel(export_file, index=False)
+# Export dataframe to an Excel file
+try:
+    with pd.ExcelWriter(
+        export_file,
+        mode="a",
+        engine="openpyxl",
+        if_sheet_exists="overlay",
+    ) as writer:
+         projects_df.to_excel(writer,sheet_name="Sheet1", startrow=writer.sheets["Sheet1"].max_row, index = False,header= False)
+except FileNotFoundError:
+    projects_df.to_excel(export_file, index=False)
