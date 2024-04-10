@@ -3,18 +3,28 @@
 # Listed below are the headers to be copied to the csv file when needed
 # Number of Files,Max Depth of Files,Number of Contributors,Number of Commits,Number of Merge Commits,Number of Branches,Number of Tags,Number of Links,Has README,Has SECURITY,Has CODE_OF_CONDUCT,Has CONTRIBUTING,Has ISSUE_TEMPLATE,Has PULL_REQUEST_TEMPLATE
 
+if [[ $# -ne 2 ]]; then
+  echo "usage: ./clone_scraper [fullpath_to_import_file] [fullpath_to_export_file]"
+  exit 
+fi
+
+# Store command line argument variables
+import_file=$1
+export_file=$2
+
 repo_list=()
 
-# While loop to get all the ssh_links for cloning
+# While loop to get all the ssh_links for cloning from the import file
+# Reading line by line
 while read -r line
 do
   repo_list+=("$line")
-done < ~/Research/Predicting-Abandonment/src/clone_repos.txt
+done < "$import_file"
 
 
 for i in "${repo_list[@]}"; do
   echo "$i"
-  git clone --filter=blob:none "$i"
+  git clone "$i"
 
   # Get directory name based off of SSH clone link
   directory=$(echo "$i" | cut -d '/' -f 2 | rev | cut -c 5- | rev)
@@ -107,9 +117,18 @@ for i in "${repo_list[@]}"; do
   file_types=(`find . -type f | rev | grep '.' | cut -d '.' -f 1 | rev | sort | uniq -c | awk '{$1=$1};1' | tr "[:blank:]" ":"`)
 
   # Output data to the csv file
-   echo "$num_files,$depth,$num_contributors,$num_commits,$num_merges,$num_branches,$num_tags,$num_links,$README,$SECURITY,$CONDUCT,$CONTRIBUTING,$ISSUE_TEMPLATE,$PULL_TEMPLATE,${file_types[@]}" >> ~/Research/Predicting-Abandonment/src/clone_data.csv
+   echo "$num_files,$depth,$num_contributors,$num_commits,$num_merges,$num_branches,$num_tags,$num_links,$README,$SECURITY,$CONDUCT,$CONTRIBUTING,$ISSUE_TEMPLATE,$PULL_TEMPLATE,${file_types[@]}" >> "$export_file"
 
   # Remove the cloned repository's directory
+  # cd ..
+  # echo -e "y\ny\n" | rm -r $directory
+
+  # Compress the cloned repository
+  # -c creates an archive, -z tells tar to use gzip, -f specifies file name of compressed file
   cd ..
-  echo -e "y\ny\n" | rm -r $directory
+  tar -czf "$directory".tar.gz ./"$directory"
+
+  # To decompress the repository use the following command:
+  # -x extracts archive, other two options same as above command
+  # tar -xzf "$directory".tar.gz
 done 
