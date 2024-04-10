@@ -7,7 +7,7 @@ import math
 import sys
 
 # Get the command line arguments
-if len(sys.argv) != 6:
+if len(sys.argv) != 4:
   print("Usage: [export_file] [projects_file] [access_token]")
   exit()
 
