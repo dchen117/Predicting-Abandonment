@@ -8,21 +8,6 @@ import datetime
 import subprocess
 import sys
 
-# Get the command line arguments
-if len(sys.argv) != 6:
-  print("Usage: [export_file] [projects_file] [low_stars] [high_stars] [access_token]")
-  exit()
- 
-export_file = str(sys.argv[1])
-projects_file = str(sys.argv[2])
-low_stars = int(sys.argv[3])
-high_stars = int(sys.argv[4])
-access_token = str(sys.argv[5])
-
-projects = pd.read_excel(projects_file)
-project_list = projects.iloc[:, 0].tolist()
-project_set = set(project_list)
-
 # Declare lists to store feature data
 repo_url= []
 repo_stars = []
@@ -45,7 +30,7 @@ repo_topics = []
 repo_ssh_url = []
 
 # Function used to scrape the data using the Github API
-def get_github_repo_info(search_filter, page_number, project_set):
+def get_github_repo_info(search_filter, page_number, access_token):
     api_url = f"https://api.github.com/search/repositories?q="+str(search_filter)+"&page="+str(page_number)+"&per_page=100"
 
     headers = {
@@ -117,7 +102,7 @@ def get_github_repo_info(search_filter, page_number, project_set):
 
 
 # Function used to facilitate scraping by changing search filters for number of stars, and some of them created date
-def get_projects(low, high, project_set):
+def get_projects(low, high):
     # Variable for determining range of projects
     decrement = 500
     # While loop to go through each range from low to high
@@ -171,49 +156,3 @@ def get_projects(low, high, project_set):
                 print(high-decrement, high-1, page_number)
                 return_value = get_github_repo_info("stars%3A"+str(high-decrement)+'..'+str(high-1), page_number, project_set)
         high -= decrement
-
-
-
-# Call the above function to begin scraping
-get_projects(low_stars,high_stars,project_set)
-
-
-
-# Create pandas DataFrame to store the data
-projects_df = pd.DataFrame({'Project URL':repo_url,
-                            'Clone SSH URL':repo_ssh_url,
-                            'Organization':repo_org,
-                            'Homepage':repo_homepage,
-                            'Last Update':repo_last_update,
-                            'Last Push':repo_last_push,
-                            'Created Date':repo_created_date,
-                            'Archived':repo_archived,
-                            'Size':repo_size,
-                            'Number of Stars':repo_stars,
-                            #'Number of Watches':repo_watches,
-                            'Open Issues + Open Pull Requests':repo_open_issues,
-                            'Number of forks':repo_forks,
-                            'Has a Wiki':repo_wiki,
-                            'Has Discussions':repo_discussions,
-                            'Has Projects':repo_projects,
-                            'Has Pages':repo_pages,
-                            'License':repo_license,
-                            'Language':repo_language,
-                            'Topics': repo_topics})
-
-# For printing the data frame
-# projects_df
-
-
-# Export to Excel
-# CHANGE THE EXPORTED FILE NAME ACCORDINGLY
-try:
-    with pd.ExcelWriter(
-        export_file,
-        mode="a",
-        engine="openpyxl",
-        if_sheet_exists="overlay",
-    ) as writer:
-         projects_df.to_excel(writer,sheet_name="Sheet1", startrow=writer.sheets["Sheet1"].max_row, index = False,header= False)
-except FileNotFoundError:
-    projects_df.to_excel(export_file, index=False)
