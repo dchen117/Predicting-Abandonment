@@ -10,7 +10,7 @@ parser = argparse.ArgumentParser(description='Scrapes features from Github proje
 # Adding command-line arguments and options
 parser.add_argument('access_token', help='Github access token for authorization.')
 parser.add_argument('export_file', help='Name of excel file that stores the collected features.')
-parser.add_argument('input_file', help='Name of excel file with list of projects to be scraped.')
+parser.add_argument('import_file', help='Name of excel file with list of projects to be collected. The list should be in the first column of the excel file.')
 
 # Parse command-line arguments
 args = parser.parse_args()
@@ -18,7 +18,7 @@ args = parser.parse_args()
 # Access arguments
 access_token = args.access_token
 export_file = args.export_file
-input_file = args.input_file
+import_file = args.import_file
 
 # Scraping features using html and api scrapers
 html.scrape_project('https://github.com/freeCodeCamp/freeCodeCamp')
