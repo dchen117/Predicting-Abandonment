@@ -125,8 +125,8 @@ for i in "${repo_list[@]}"; do
 
   # Compress the cloned repository
   # -c creates an archive, -z tells tar to use gzip, -f specifies file name of compressed file
-  cd ..
-  tar -czf "$directory".tar.gz ./"$directory"
+  # cd ..
+  # tar -czf "$directory".tar.gz ./"$directory"
 
   # To decompress the repository use the following command:
   # -x extracts archive, other two options same as above command
