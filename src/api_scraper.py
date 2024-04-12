@@ -44,37 +44,6 @@ repo_org = []
 repo_topics = []
 repo_ssh_url = []
 
-# Function for collecting SBOMs
-def collect_sbom(project_list, dir_path):
-    for project in project_list:
-        owner_repo = project[19:]
-        sbom_url = f"https://api.github.com/repos/{owner_repo}/dependency-graph/sbom"
-        file_name = owner_repo.split('/')
-        file_name = f"{file_name[0]}_{file_name[1]}_sbom.json"
-        print(file_name)
-        
-        headers = {
-            'Accept': 'application/vnd.github+json',
-            'Authorization': 'Bearer ' + access_token,
-            'X-GitHub-Api-Version': '2022-11-28',
-        }
-        response = requests.get(sbom_url, headers=headers)
-        if response.status_code == 200:
-            with open(f"{dir_path}/{file_name}", "wb") as file:
-                file.write(response.content)
-            print(f"{project}: SBOM downloaded")
-        else:
-            print(f"{project}: SBOM download failed")
-
-# Collecting SBOMs and storing them in a sbom directory
-current_dir = os.getcwd()
-date = datetime.date.today()
-dir_name = f"sbom_{date}"
-if not os.path.exists(dir_name): 
-    os.makedirs(dir_name)
-sbom_dir = f"{current_dir}/{dir_name}"
-collect_sbom(project_list, sbom_dir)
-
 # Function used to scrape the data using the Github API
 def get_github_repo_info(search_filter, page_number, project_set):
     api_url = f"https://api.github.com/search/repositories?q="+str(search_filter)+"&page="+str(page_number)+"&per_page=100"
@@ -102,15 +71,6 @@ def get_github_repo_info(search_filter, page_number, project_set):
         num_repos = response.json()['total_count']
 
         for repo_info in repo_list:
-
-            # Only scrapes repo if it is in project_set
-            if not project_set:
-                break
-            repo_name = repo_info.get("full_name", "Name not found")
-            if f"https://github.com/{repo_name}" in project_set:
-                project_set.remove(f"https://github.com/{repo_name}")
-            else:
-                continue
 
             # Extract and print relevant information
             repo_url.append(repo_info.get("html_url", "URL not found"))
@@ -161,7 +121,7 @@ def get_projects(low, high, project_set):
     # Variable for determining range of projects
     decrement = 500
     # While loop to go through each range from low to high
-    while high != low:
+    while high > low:
         # Change ranges accordingly to get <1000 projects
         if high == 400000:
             decrement = 375000
@@ -178,6 +138,8 @@ def get_projects(low, high, project_set):
         elif high == 500:
             decrement = 1
 
+        if (high-decrement) < low:
+          decrememt = high - low
 
         # Search URL just in case => q=stars%3A120..120+created%3A2021-01-01..2021-12-31&
 
