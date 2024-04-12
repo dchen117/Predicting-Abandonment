@@ -4,19 +4,7 @@ import pandas as pd
 import time
 import os
 import math
-import sys
-
-# Get the command line arguments
-if len(sys.argv) != 4:
-  print("Usage: [export_file] [projects_file] [access_token]")
-  exit()
-
-export_file = str(sys.argv[1])
-projects_file = str(sys.argv[2])
-access_token = str(sys.argv[3])
-
-# Import the project data from the Excel file
-project_list = pd.read_excel(f"{projects_file}").iloc[:, 0].tolist()
+import datetime
 
 # Initialize the lists to store the information for each repo
 repo_url= []
@@ -40,7 +28,43 @@ repo_topics = []
 repo_ssh_url = []
 repo_watches = []
 
-def get_github_repo_info(project):
+# Directory name for storing sbom files
+current_dir = os.getcwd()
+date = datetime.date.today()
+sbom_dir_name = f"sbom_{date}"
+sbom_dir_path = f"{current_dir}/{sbom_dir_name}"
+	
+def collect_sbom(project_url, access_token):
+    if not os.path.exists(sbom_dir_name): 
+        os.makedirs(sbom_dir_name)
+
+    owner_repo = project_url[19:]
+    sbom_url = f"https://api.github.com/repos/{owner_repo}/dependency-graph/sbom"
+
+    # File name for repo's sbom
+    file_name = owner_repo.split('/')
+    file_name = f"{file_name[0]}_{file_name[1]}_sbom.json"
+    print(file_name)
+
+    headers = {
+        'Accept': 'application/vnd.github+json',
+        'Authorization': f'Bearer {access_token}',
+        'X-GitHub-Api-Version': '2022-11-28',
+    }
+
+    # Getting sbom and storing it in sbom directory
+    response = requests.get(sbom_url, headers=headers)
+    if response.status_code == 200:
+        with open(f"{sbom_dir_path}/{file_name}", "wb") as file:
+            file.write(response.content)
+        print(f"{project_url}: SBOM downloaded")
+    else:
+        print(f"{project_url}: SBOM download failed")
+
+
+
+def scrape_project(project_url, access_token):
+    project = project_url[19:]
     api_url = f"https://api.github.com/repos/{project}"
 
     headers = {
@@ -49,7 +73,6 @@ def get_github_repo_info(project):
     }
     
     response = requests.get(api_url, headers=headers)
-
     if response.status_code == 404:
         return None
 
@@ -85,6 +108,7 @@ def get_github_repo_info(project):
         repo_topics.append(len(repo_info.get("topics", "No Topics")))
         repo_ssh_url.append(repo_info.get("ssh_url", "Projects not found"))
         repo_org.append(repo_info['owner'].get("type", "No type"))
+        repo_watches.append(repo_info.get("subscribers_count", "Watches not found"))
         
         # Conditional statements are to avoid possible errors
         license = repo_info.get("license", "None")
@@ -106,24 +130,26 @@ def get_github_repo_info(project):
         print("Error:", response.status_code)
         print("Response:", response.text)
 
-for project in project_list:
-    print(project)
-    project = project[19:]
-    get_github_repo_info(project)
 
-projects_df = pd.DataFrame({'Project URL':repo_url,
+def scrape_project_list(project_list):
+    for project_url in project_list:
+        print(project_url)
+        scrape_project(project_url)
+
+def convertToDataFrame():
+    projects_df = pd.DataFrame({'Project URL':repo_url,
                             'Clone SSH URL':repo_ssh_url,
                             'Organization':repo_org,
                             'Homepage':repo_homepage,
-                            'Last Update':repo_last_update, 
+                            'Last Update':repo_last_update,
                             'Last Push':repo_last_push,
                             'Created Date':repo_created_date,
                             'Archived':repo_archived,
-                            'Size':repo_size, 
-                            'Number of Stars':repo_stars, 
+                            'Size':repo_size,
+                            'Number of Stars':repo_stars,
                             'Number of Watches':repo_watches,
-                            'Number of Open Issues':repo_open_issues, 
-                            'Number of forks':repo_forks, 
+                            'Number of Open Issues':repo_open_issues,
+                            'Number of forks':repo_forks,
                             'Has a Wiki':repo_wiki,
                             'Has Discussions':repo_discussions,
                             'Has Projects':repo_projects,
@@ -131,16 +157,4 @@ projects_df = pd.DataFrame({'Project URL':repo_url,
                             'License':repo_license,
                             'Language':repo_language,
                             'Topics': repo_topics})
-
-# Export to Excel
-# CHANGE THE EXPORTED FILE NAME ACCORDINGLY
-try:
-    with pd.ExcelWriter(
-        export_file,
-        mode="a",
-        engine="openpyxl",
-        if_sheet_exists="overlay",
-    ) as writer:
-         projects_df.to_excel(writer,sheet_name="Sheet1", startrow=writer.sheets["Sheet1"].max_row, index = False,header= False)
-except FileNotFoundError:
-    projects_df.to_excel(export_file, index=False)
+    return projects_df

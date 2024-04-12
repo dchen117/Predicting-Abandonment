@@ -14,24 +14,6 @@ from concurrent.futures import ThreadPoolExecutor
 import multiprocessing
 import sys
 
-# Get command line arguments
-if len(sys.argv) != 5:
-  print("Usage: [import_file] [export_file] [start_index] [end_index]")
-  exit()
-
-# Skip first index which is script name
-import_file = str(sys.argv[1])
-export_file = str(sys.argv[2])
-start_index = int(sys.argv[3])
-end_index = int(sys.argv[4])
-
-# Read in the import/Excel file and get the project URLs
-project_list = pd.read_excel(import_file)
-project_list = project_list['Project URL'].tolist()
-
-# Scrape a specific range of the projects
-project_list = project_list[start_index:end_index]
-
 # Chrome options to be added for Selenium Driver to speed up data collection speed
 # Includes: Headless mode and no images
 chrome_options = Options()
@@ -54,6 +36,7 @@ chrome_options.add_argument("--log-level=3")
 chrome_options.add_argument("--silent")
 chrome_options.add_argument("--blink-settings=imagesEnabled=false")
 
+projects = []
 
 # BELOW: Defining individual functions to isolate pages used to scrape features
 
@@ -116,10 +99,8 @@ def scrape_owner(project_url, driver):
 
     # Number of Owner Members
     members = soup.find('span', class_='Counter js-profile-member-count')
-    print(f"{project} Members: {members} stuff")
     if members != None:
       while members.text == "":
-        print(f"{project} is getting members!")
         driver.get(owner_url)
         WebDriverWait(driver, 10).until(
           EC.visibility_of_element_located((By.TAG_NAME, 'body'))
@@ -331,7 +312,7 @@ def scrape_page(project_url, driver):
 
 
 # Define function to be used to scrape each of the above pages and combine their results
-def scrape_project(project_url):
+def scrape_project(project_url, append=True):
     project = [project_url]
 
     driver = webdriver.Chrome(options=chrome_options)
@@ -348,74 +329,41 @@ def scrape_project(project_url):
     driver.quit()
 
     project = project + prs + owner + insight + issues + page
-    return project
+    
+    if append:
+        projects.append(project)
+    else:
+        return project
 
 
 # Define function that will use threads to scrape each project in the sublist passed to it
 def scrape_project_list(project_list):
-    projects = []
     with ThreadPoolExecutor(max_workers=10) as p:
-        features = p.map(scrape_project, project_list)
+        features = p.map(scrape_project, project_list, False)
         for f in features:
             projects.append(f)
     return projects
 
+def convertToDataFrame():
+    projects_df = pd.DataFrame(projects, columns=['Project URL',
+                                                  'Open Pull Requests',
+                                                  'Closed Pull Requests',
+                                                  'Verified Owner',
+                                                  'Followers of Owner',
+                                                  'Members of Owner',
+                                                  'Repos of Owner',
+                                                  'Active Pull Requests',
+                                                  'Active Issues',
+                                                  'Open Issues',
+                                                  'Closed Issues',
+                                                  'Number of Labels',
+                                                  'Number of Milestones',
+                                                  'Sponsored',
+                                                  'Current Sponsors',
+                                                  'Past Sponsors',
+                                                  'Number of Watches',
+                                                  'Number of Workflow Runs',
+                                                  'Number of Dependents'
+                                                 ])
+    return projects_df
 
-# MAIN
-# Time counter used to keep track of runtime for program
-if __name__ == '__main__':
-  start_time = time.time()
-
-  # Dividing up list into sublists for multi-processing
-  list_len = len(project_list)
-  sub_len = list_len // 3
-  sublists = [project_list[i:i+sub_len] for i in range(0, list_len, sub_len)]
-  #pool = multiprocessing.Pool(processes=3)
-  #results = pool.map(scrape_project_list, sublists)
-  results = scrape_project_list(project_list)
-  #print(scrape_project("https://github.com/public-apis/public-apis"))
-  #results = []
-  #projects = []
-  #for result in results:
-  #  projects.extend(result)
-  #end_time = time.time()
-
-  elapsed_time = end_time - start_time
-  print(f"elapsed time is {elapsed_time}")
-
-  # Save the data in a pandas Dataframe
-  projects_df = pd.DataFrame(results, columns=['Project URL',
-                                              'Open Pull Requests',
-                                              'Closed Pull Requests',
-                                              'Verified Owner',
-                                              'Followers of Owner',
-                                              'Members of Owner',
-                                              'Repos of Owner',
-                                              'Active Pull Requests',
-                                              'Active Issues',
-                                              'Open Issues',
-                                              'Closed Issues',
-                                              'Number of Labels',
-                                              'Number of Milestones',
-                                              'Sponsored',
-                                              'Current Sponsors',
-                                              'Past Sponsors',
-                                              'Number of Watches',
-                                              'Number of Workflow Runs',
-                                              'Number of Dependents'
-                                             ])
-
-  # Print out dataframe for testing purposes
-  print(projects_df)
-
-# Export dataframe to an Excel file
-#try:
-#    with pd.ExcelWriter(
-#        export_file,
-#        mode="a",
-#        engine="openpyxl",
-#        if_sheet_exists="overlay",
-#    ) as writer:
-#         projects_df.to_excel(writer,sheet_name="Sheet1", startrow=writer.sheets["Sheet1"].max_row, index = False,header= False)
-#except FileNotFoundError:
-#    projects_df.to_excel(export_file, index=False)
