@@ -5,43 +5,40 @@ import pandas as pd
 import argparse
 from pathlib import Path
 import subprocess
+import sys
 
 # Adding ArgumentParse object with description
 parser = argparse.ArgumentParser(description='Scrapes features from Github projects.')
 
-# Adding command-line argument --mode
-parser.add_argument('--mode', choices=['scrape', 'rescrape', 'subscrape'], help='Specify mode for scraping: scrape, rescrape, subscrape.')
+# Adding command-line arguments --mode, and other required arguments used in every mode
+parser.add_argument('mode', choices=['scrape', 'rescrape', 'subscrape'], help='Specify mode for scraping: scrape, rescrape, subscrape.')
+parser.add_argument('access_token', help='Github access token for authorization.')
+parser.add_argument('export_file', help='Name of excel file that stores the collected features.')
 
 # Parse command-line arguments
 args = parser.parse_args()
 
 # Access mode specified 
 mode = args.mode
+access_token = args.access_token
+export_file = args.export_file
 
 # Execute based on mode
 if mode == 'scrape':
-  # Add and retrieve arguments for this mode
-  parser.add_argument('access_token', help='Github access token for authorization.')
-  parser.add_argument('export_file', help='Name of excel file that stores the collected features.')
-  parser.add_argument('import_file', help='Name of excel file with list of projects to be collected. The list should be in the first column of the excel file.')
+  # Prompt user to provide star range for scraping
+  high = int(input("Please enter an upper limit for the star range you are collecting: ")) 
+  low = int(input("Please enter a lower limit for the star range you are collecting: "))
 
-  # Access arguments
-  access_token = args.access_token
-  export_file = args.export_file
-  import_file = args.import_file
 
 elif mode == 'rescrape':
-  # Add and retrieve arguments for this mode
-  parser.add_argument('access_token', help='Github access token for authorization.')
-  parser.add_argument('export_file', help='Name of excel file that stores the collected features.')
-  parser.add_argument('import_file', help='Name of excel file with list of projects to be collected. The list should be in the first column of the excel file.')
-
-  # Access arguments
-  access_token = args.access_token
-  export_file = args.export_file
-  import_file = args.import_file
+  # Prompt user for the name of the import file to be used
+  import_file = str(input("Please enter the name of the import file containing the list of projects you've collected: ")) 
 
 elif mode == 'subscrape':
+  # Prompt user to provide star range for scraping
+  high = int(input("Please enter an upper limit for the star range you are collecting: ")) 
+  low = int(input("Please enter a lower limit for the star range you are collecting: "))
+
 
 # Scraping features using html and api scrapers
 html.scrape_project('https://github.com/freeCodeCamp/freeCodeCamp')
