@@ -130,7 +130,7 @@ for i in "${repo_list[@]}"; do
   # CODE LEFT HERE JUST IN CASE: 
   # Remove the cloned repository's directory
   # cd ..
-  # echo -e "y\ny\n" | rm -r $directory
+  echo -e "y\ny\n" | rm -r $directory
 
   # Compress the cloned repository
   # -c creates an archive, -z tells tar to use gzip, -f specifies file name of compressed file
