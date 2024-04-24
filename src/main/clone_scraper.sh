@@ -104,21 +104,28 @@ for i in "${repo_list[@]}"; do
     PULL_TEMPLATE="YES"
   fi
 
+  # THESE LAST COMMANDS ARE COMMENTED OUT
+  # The data can be collected but is formatted in a way that makes it hard to store
   # List of commits for days
-  day_trends=$(git log --date=short --pretty=format:%cd | sort | uniq -c)
-  
+  # day_trends=$(git log --date=short --pretty=format:%cd | sort | uniq -c)
   # List of commits for months
-  month_trends=$(git log --date=short --pretty=format:%cd | cut -d '-' -f 1-2 | sort | uniq -c)
-
+  # month_trends=$(git log --date=short --pretty=format:%cd | cut -d '-' -f 1-2 | sort | uniq -c)
   # List of commits for years
-  year_trends=$(git log --date=short --pretty=format:%cd | cut -d '-' -f 1 | sort | uniq -c)
+  # year_trends=$(git log --date=short --pretty=format:%cd | cut -d '-' -f 1 | sort | uniq -c)
 
   # Declare empty list to store file types and counts
   file_types=(`find . -type f | rev | grep '.' | cut -d '.' -f 1 | rev | sort | uniq -c | awk '{$1=$1};1' | tr "[:blank:]" ":"`)
+  
+  # Switch to parent directory
+  cd ..
+
+  # Export filetypes to a separate file as data is awkward to store in pandas dataframe
+  echo "$i,${file_types[@]}" >>
 
   # Output data to the csv file
-   echo "$num_files,$depth,$num_contributors,$num_commits,$num_merges,$num_branches,$num_tags,$num_links,$README,$SECURITY,$CONDUCT,$CONTRIBUTING,$ISSUE_TEMPLATE,$PULL_TEMPLATE,${file_types[@]}" >> "$export_file"
+  echo "$i,$num_files,$depth,$num_contributors,$num_commits,$num_merges,$num_branches,$num_tags,$num_links,$README,$SECURITY,$CONDUCT,$CONTRIBUTING,$ISSUE_TEMPLATE,$PULL_TEMPLATE,${file_types[@]}" >> "$export_file"
 
+  # CODE LEFT HERE JUST IN CASE: 
   # Remove the cloned repository's directory
   # cd ..
   # echo -e "y\ny\n" | rm -r $directory

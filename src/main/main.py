@@ -7,6 +7,7 @@ import argparse
 from pathlib import Path
 import subprocess
 import sys
+import os
 
 # Adding ArgumentParse object with description
 parser = argparse.ArgumentParser(description='Scrapes features from Github projects.')
@@ -39,27 +40,32 @@ if mode == 'scrape':
   api_m.collect_sbom('https://github.com/freeCodeCamp/freeCodeCamp', access_token)
 
   # Converting features to pandas dataframe
-  api_df = api_m.convertToDataFrame()
+  api_df = api.convertToDataFrame()
   html_df = html.convertToDataFrame()
 
   # Merging dataframes
   df = pd.merge(api_df, html_df, how='outer', on='Project URL')
 
   # Retrieve the SSH urls for the bash script
-  # Idea: Somehow get a list from the dataframe, how to pass that to clone_scraper
-  export_bash_csv = str(input("Please provide the full path to the file to store the bash info (make sure the file exists): "))
+  df['Clone SSH URL'].to_csv('clone_urls.txt', header=False, index=False, line_terminator='\n')
+
+  # Create a file to store the bash data, will be later deleted in order to avoid duplicate data
+  export_bash_csv = "clone_data.csv"
+  open(export_bash_csv, 'a').close()
 
   # Run the bash script scraper, using subprocess.run()
-  command = f"./clone_scraper.sh {import_file_for_list_of_projects} {export_bash_csv}"
+  command = f"./clone_scraper.sh ./clone_urls.txt {export_bash_csv}"
   subprocess.run(command, shell=True, capture_output=True, text=True)
 
   # Converting features to pandas dataframe
-  bash_df = 
+  bash_df = pd.read_csv(export_bash_csv, header=None, names=['Clone SSH URL','Number of Files','Depth of Files','Number of Contributors','Number of Commits','Number of Merges','Number of Branches','Number of Tags','Number of Links','Has README','Has SECURITY','Has Conduct','Has Contributing','Has ISSUE_TEMPLATE','Has PULL_TEMPLATE']) 
 
+  # Ask the user for the file path to the export file for the bash script
   # Merge the dataframes again
-  df = pd.merge(df, bash_df, how='outer', on='Project URL')
+  df = pd.merge(df, bash_df, how='outer', on='Clone SSH URL')
 
   # Delete the export file provided
+  os.remove(export_bash_csv)
 
 elif mode == 'rescrape':
   # Prompt user for the name of the import file to be used
@@ -78,19 +84,25 @@ elif mode == 'rescrape':
   df = pd.merge(api_df, html_df, how='outer', on='Project URL')
 
   # Retrieve the SSH urls for the bash script
-  export_bash_csv = str(input("Please provide the full path to the file to store the bash info (make sure the file exists): "))
+  # df['Clone SSH URL'].to_csv('clone_urls.txt', header=False, index=False, line_terminator='\n')
+  
+  # Create a file to store the bash data, will be later deleted in order to avoid duplicate data
+  export_bash_csv = "clone_data.csv"
+  open(export_bash_csv, 'a').close()
 
   # Run the bash script scraper, using subprocess.run()
-  command = f"./clone_scraper.sh {import_file_for_list_of_projects} {export_file_for_bash_info}"
+  # NOTE: clone_urls.txt should still exist if it wasn't deleted or if project lists haven't changed
+  command = f"./clone_scraper.sh ./clone_urls.txt {export_bash_csv}"
   subprocess.run(command, shell=True, capture_output=True, text=True)
 
   # Converting features to pandas dataframe
-  bash_df = 
+  bash_df = pd.read_csv(export_bash_csv, header=None, names=['Clone SSH URL','Number of Files','Depth of Files','Number of Contributors','Number of Commits','Number of Merges','Number of Branches','Number of Tags','Number of Links','Has README','Has SECURITY','Has Conduct','Has Contributing','Has ISSUE_TEMPLATE','Has PULL_TEMPLATE']) 
   
   # Merging dataframes
-  df = pd.merge(df, bash_df, how='outer', on='Project URL')
+  df = pd.merge(df, bash_df, how='outer', on='Clone SSH URL')
   
   # Delete the export file provided
+  os.remove(export_bash_csv)
 
 elif mode == 'subscrape':
   # Prompt user to provide star range for scraping

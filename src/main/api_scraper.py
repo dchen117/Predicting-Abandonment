@@ -60,7 +60,6 @@ def get_github_repo_info(search_filter, page_number, access_token):
             # Extract and print relevant information
             repo_url.append(repo_info.get("html_url", "URL not found"))
             repo_stars.append(repo_info.get("stargazers_count", "Stargazers count not found"))
-            #repo_watches.append(repo_info.get("subscribers_count", "Watchers count not found"))
             repo_wiki.append(repo_info.get("has_wiki", "Wiki not found"))
             repo_open_issues.append(repo_info.get("open_issues_count", "Open issues count not found"))
             repo_forks.append(repo_info.get("forks_count", "Forks count not found"))
@@ -156,3 +155,27 @@ def get_projects(low, high):
                 print(high-decrement, high-1, page_number)
                 return_value = get_github_repo_info("stars%3A"+str(high-decrement)+'..'+str(high-1), page_number, project_set)
         high -= decrement
+
+
+# Export to pandas DataFrame
+def convertToDataFrame():
+    projects_df = pd.DataFrame({'Project URL':repo_url,
+                            'Clone SSH URL':repo_ssh_url,
+                            'Organization':repo_org,
+                            'Homepage':repo_homepage,
+                            'Last Update':repo_last_update,
+                            'Last Push':repo_last_push,
+                            'Created Date':repo_created_date,
+                            'Archived':repo_archived,
+                            'Size':repo_size,
+                            'Number of Stars':repo_stars,
+                            'Number of Open Issues':repo_open_issues,
+                            'Number of forks':repo_forks,
+                            'Has a Wiki':repo_wiki,
+                            'Has Discussions':repo_discussions,
+                            'Has Projects':repo_projects,
+                            'Has Pages':repo_pages,
+                            'License':repo_license,
+                            'Language':repo_language,
+                            'Topics': repo_topics})
+    return projects_df
