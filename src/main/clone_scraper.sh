@@ -12,7 +12,7 @@ fi
 import_file=$1
 export_file=$2
 
-date=$(date)
+DATE=$(date)
 repo_list=()
 
 # While loop to get all the ssh_links for cloning from the import file
@@ -121,7 +121,7 @@ for i in "${repo_list[@]}"; do
   cd ..
 
   # Export filetypes to a separate file as data is awkward to store in pandas dataframe
-  FILE_NAME="file_types -> $(date)"
+  FILE_NAME="file_types -> $DATE"
   echo "$i,${file_types[@]}" >> "$FILE_NAME"
 
   # Output data to the csv file
