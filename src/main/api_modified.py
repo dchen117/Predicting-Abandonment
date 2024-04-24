@@ -61,6 +61,9 @@ def collect_sbom(project_url, access_token):
     else:
         print(f"{project_url}: SBOM download failed")
 
+def collect_sbom_list(project_list, access_token):
+    for project in project_list:
+        collect_sbom(project, access_token)
 
 
 def scrape_project(project_url, access_token):

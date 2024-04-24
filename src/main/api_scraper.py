@@ -101,7 +101,7 @@ def get_github_repo_info(search_filter, page_number, access_token):
 
 
 # Function used to facilitate scraping by changing search filters for number of stars, and some of them created date
-def get_projects(low, high):
+def get_projects(low, high, access_token):
     # Variable for determining range of projects
     decrement = 500
     # While loop to go through each range from low to high
@@ -135,25 +135,25 @@ def get_projects(low, high):
                 year = 2024 - i
                 created_date = "+created%3A" + str(year) + "-01-01.." + str(year) + "-12-31"
                 print(high-decrement, high-1, year, 1)
-                return_value = get_github_repo_info("stars%3A"+str(high-decrement)+'..'+str(high-1)+created_date, 1, project_set)
+                return_value = get_github_repo_info("stars%3A"+str(high-decrement)+'..'+str(high-1)+created_date, 1, access_token)
                 # For loop to run function to get features
                 for page_number in range(2,math.ceil(return_value/100)+1):
                     print(high-decrement, high-1, page_number)
-                    return_value = get_github_repo_info("stars%3A"+str(high-decrement)+'..'+str(high-1)+created_date, page_number, project_set)
+                    return_value = get_github_repo_info("stars%3A"+str(high-decrement)+'..'+str(high-1)+created_date, page_number, access_token)
             # One more request for all projects <=2015
             created_date = "+created%3A<=2015-12-31"
             print(high-decrement, high-1, 2015, 1)
-            return_value = get_github_repo_info("stars%3A"+str(high-decrement)+'..'+str(high-1)+created_date, 1, project_set)
+            return_value = get_github_repo_info("stars%3A"+str(high-decrement)+'..'+str(high-1)+created_date, 1, access_token)
             for page_number in range(2,math.ceil(return_value/100)+1):
                 print(high-decrement, high-1, 2015, page_number)
-                return_value = get_github_repo_info("stars%3A"+str(high-decrement)+'..'+str(high-1)+created_date, page_number, project_set)
+                return_value = get_github_repo_info("stars%3A"+str(high-decrement)+'..'+str(high-1)+created_date, page_number, access_token)
         else:
             print(high-decrement, high-1, 1)
-            return_value = get_github_repo_info("stars%3A"+str(high-decrement)+'..'+str(high-1), 1, project_set)
+            return_value = get_github_repo_info("stars%3A"+str(high-decrement)+'..'+str(high-1), 1, access_token)
             for page_number in range(2,math.ceil(return_value/100)+1):
                 # For loop to run function to get features
                 print(high-decrement, high-1, page_number)
-                return_value = get_github_repo_info("stars%3A"+str(high-decrement)+'..'+str(high-1), page_number, project_set)
+                return_value = get_github_repo_info("stars%3A"+str(high-decrement)+'..'+str(high-1), page_number, access_token)
         high -= decrement
 
 

@@ -259,7 +259,11 @@ def scrape_page(project_url, driver):
             past_sponsors = 0
         else:
             current_sponsors = current_sponsors.text.split()[2]
-            past_sponsors = past_sponsors.text.split()[2]
+            
+        if past_sponsors == None:
+            past_sponsors = 0
+        else:
+            past_sponsors.text.split()[2]
 
     else:
         current_sponsors = 0
@@ -312,7 +316,7 @@ def scrape_page(project_url, driver):
 
 
 # Define function to be used to scrape each of the above pages and combine their results
-def scrape_project(project_url, append=True):
+def scrape_project(project_url):
     project = [project_url]
 
     driver = webdriver.Chrome(options=chrome_options)
@@ -329,17 +333,13 @@ def scrape_project(project_url, append=True):
     driver.quit()
 
     project = project + prs + owner + insight + issues + page
-    
-    if append:
-        projects.append(project)
-    else:
-        return project
+    return project
 
 
 # Define function that will use threads to scrape each project in the sublist passed to it
 def scrape_project_list(project_list):
     with ThreadPoolExecutor(max_workers=10) as p:
-        features = p.map(scrape_project, project_list, False)
+        features = p.map(scrape_project, project_list)
         for f in features:
             projects.append(f)
     return projects
