@@ -8,6 +8,7 @@ from pathlib import Path
 import subprocess
 import sys
 import os
+import datetime
 
 # Adding ArgumentParse object with description
 parser = argparse.ArgumentParser(description='Scrapes features from Github projects.')
@@ -15,7 +16,6 @@ parser = argparse.ArgumentParser(description='Scrapes features from Github proje
 # Adding command-line arguments --mode, and other required arguments used in every mode
 parser.add_argument('mode', choices=['scrape', 'rescrape', 'subscrape'], help='Specify mode for scraping: scrape, rescrape, subscrape.')
 parser.add_argument('access_token', help='Github access token for authorization.')
-parser.add_argument('export_file', help='Name of excel file that stores the collected features.')
 
 # Parse command-line arguments
 args = parser.parse_args()
@@ -23,10 +23,24 @@ args = parser.parse_args()
 # Access mode specified 
 mode = args.mode
 access_token = args.access_token
-export_file = args.export_file
 
 # Initialize Dataframe to be exported
 df = ""
+
+# Making export file
+current_datetime = datetime.datetime.now()
+formatted_datetime = current_datetime.strftime("%Y-%m-%d_%H:%M:%S")
+export_file = "features_" + formatted_datetime + ".xlsx"
+
+
+# Export merged dataframe as Excel file
+def export_to_excel():
+    if Path(export_file).is_file():
+        with pd.ExcelWriter(export_file, mode="a", engine="openpyxl", if_sheet_exists="overlay") as writer:
+            df.to_excel(writer,sheet_name="Sheet1", startrow=writer.sheets["Sheet1"].max_row, index = False,header= False)
+    else:
+        df.to_excel(export_file, index=False)
+
 
 # Execute based on mode
 if mode == 'scrape':
@@ -35,16 +49,23 @@ if mode == 'scrape':
   low = int(input("Please enter a lower limit for the star range you are collecting: ")) 
 
   # Scraping features using html and api scrapers
-  api.get_projects(low, high, access_token)
-  html.scrape_project_list(api.repo_url)
-  api_m.collect_sbom_list(api.repo_url, access_token)
+  try:
+    api.get_projects(low, high, access_token)
+    html.scrape_project_list(api.repo_url)
+    api_m.collect_sbom_list(api.repo_url, access_token)
+  except KeyboardInterrupt:
+    print("KeyboardInterrupt Detected. Saving results...")
+  finally:
+    # Converting features to pandas dataframe
+    api_df = api.convertToDataFrame()
+    html_df = html.convertToDataFrame()
 
-  # Converting features to pandas dataframe
-  api_df = api.convertToDataFrame()
-  html_df = html.convertToDataFrame()
-
-  # Merging dataframes
-  df = pd.merge(api_df, html_df, how='outer', on='Project URL')
+    # Merging dataframes
+    df = pd.merge(api_df, html_df, how='outer', on='Project URL')
+    
+    # Exporting to excel file
+    export_to_excel()    
+    
 
   # Retrieve the SSH urls for the bash script
   #df['Clone SSH URL'].to_csv('clone_urls.txt', header=False, index=False, line_terminator='\n')
@@ -115,11 +136,4 @@ elif mode == 'subscrape':
   # Converting features to pandas dataframe
   api_df = api_m.convertToDataFrame()
   df = api_df
-
-# Export merged dataframe as Excel file
-if Path(export_file).is_file():
-    with pd.ExcelWriter(export_file, mode="a", engine="openpyxl", if_sheet_exists="overlay") as writer:
-         df.to_excel(writer,sheet_name="Sheet1", startrow=writer.sheets["Sheet1"].max_row, index = False,header= False)
-else:
-    df.to_excel(export_file, index=False)
 

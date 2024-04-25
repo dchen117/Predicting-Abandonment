@@ -165,6 +165,11 @@ def scrape_issues(project_url, driver):
     # Issues
     issue_url = project_url + "/issues"
 
+    open_issues = None
+    closed_issues = None
+    num_labels = None
+    num_milestones = None
+
     for i in range(0,10):
         driver.get(issue_url)
 
@@ -176,20 +181,30 @@ def scrape_issues(project_url, driver):
         html = driver.page_source
         soup = BeautifulSoup(html,"html.parser")
 
-        open_issues = soup.find(href=f"/{project}/issues?q=is%3Aopen+is%3Aissue")
-        closed_issues = soup.find(href=f"/{project}/issues?q=is%3Aissue+is%3Aclosed")
+        if open_issues == None:
+            open_issues = soup.find(href=f"/{project}/issues?q=is%3Aopen+is%3Aissue")
+            if open_issues != None:
+                open_issues = open_issues.text.split()[0]
 
-        num_labels = soup.find(href=f"/{project}/labels")
-        num_milestones = soup.find(href=f"/{project}/milestones")
+        if closed_issues == None:
+            closed_issues = soup.find(href=f"/{project}/issues?q=is%3Aissue+is%3Aclosed")
+            if closed_issues != None:
+                closed_issues = closed_issues.text.split()[0]
 
-        if open_issues != None:
-            open_issues = open_issues.text.split()[0]
-            closed_issues = closed_issues.text.split()[0]
-            num_labels = num_labels.find("span").text
-            num_milestones = num_milestones.find("span").text
-            break
-        else:
+        if num_labels == None:
+            num_labels = soup.find(href=f"/{project}/labels")
+            if num_labels != None:
+                num_labels = num_labels.find("span").text
+
+        if num_milestones == None:
+            num_milestones = soup.find(href=f"/{project}/milestones")
+            if num_milestones != None:
+                num_milestones = num_milestones.find("span").text
+            
+        if open_issues == None or closed_issues == None or num_labels == None or num_milestones == None:
             time.sleep(10)
+        else:
+            break
 
     if type(num_labels) != int:
         # labels
@@ -228,9 +243,16 @@ def scrape_page(project_url, driver):
 
     # Get number of watches and sponsors
     # Wait for the document to be in 'complete' state
-    WebDriverWait(driver, 10).until(
-        EC.visibility_of_element_located((By.TAG_NAME, 'body'))
-    )
+    count = 0
+    while count < 10:
+        count += 1
+        try:
+            WebDriverWait(driver, 10).until(
+                EC.visibility_of_element_located((By.TAG_NAME, 'body'))
+            )
+        except TimeoutException:
+            print(f"TimeoutException: Retrying (Attempt {count})...")
+            
 
     # Parse HTML
     html = driver.page_source
@@ -242,7 +264,6 @@ def scrape_page(project_url, driver):
     sponsored = "Yes" if soup.find(href=f"/sponsors/{creator}") != None else "No"
 
     if sponsored == "Yes":
-        #for i in range(0,10):
         driver.get(f"https://github.com/sponsors/{creator}")
         WebDriverWait(driver, 10).until(
             EC.visibility_of_element_located((By.TAG_NAME, 'body'))
@@ -255,15 +276,15 @@ def scrape_page(project_url, driver):
 
         if current_sponsors == None:
             current_sponsors = soup.find('p', class_='f3-light color-fg-muted mb-3')
-            current_sponsors = current_sponsors.text.split()[0]
-            past_sponsors = 0
+            if current_sponsors != None:
+                current_sponsors = current_sponsors.text.split()[0]
         else:
             current_sponsors = current_sponsors.text.split()[2]
             
         if past_sponsors == None:
             past_sponsors = 0
         else:
-            past_sponsors.text.split()[2]
+            past_sponsors = past_sponsors.text.split()[2]
 
     else:
         current_sponsors = 0

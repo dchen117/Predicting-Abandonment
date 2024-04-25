@@ -28,10 +28,12 @@ repo_topics = []
 repo_ssh_url = []
 repo_watches = []
 
+
 # Directory name for storing sbom files
 current_dir = os.getcwd()
-date = datetime.date.today()
-sbom_dir_name = f"sbom_{date}"
+current_datetime = datetime.datetime.now()
+formatted_datetime = current_datetime.strftime("%Y-%m-%d_%H:%M:%S")
+sbom_dir_name = f"sbom_{formatted_datetime}"
 sbom_dir_path = f"{current_dir}/{sbom_dir_name}"
 	
 def collect_sbom(project_url, access_token):
