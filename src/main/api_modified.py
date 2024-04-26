@@ -136,10 +136,10 @@ def scrape_project(project_url, access_token):
         print("Response:", response.text)
 
 
-def scrape_project_list(project_list):
+def scrape_project_list(project_list, access_token):
     for project_url in project_list:
         print(project_url)
-        scrape_project(project_url)
+        scrape_project(project_url, access_token)
 
 def convertToDataFrame():
     projects_df = pd.DataFrame({'Project URL':repo_url,

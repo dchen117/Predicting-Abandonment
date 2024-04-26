@@ -92,10 +92,13 @@ elif mode == 'rescrape':
   # Prompt user for the name of the import file to be used
   import_file = str(input("Please enter the name of the import file containing the list of projects you've collected: ")) 
   
+  # Import the list of projects from the import Excel file
+  project_list = pd.read_excel(import_file)["Project_URL"].tolist()
+
   # Scraping features using html and api scrapers
-  api_m.scrape_project('https://github.com/freeCodeCamp/freeCodeCamp', access_token)
-  api_m.collect_sbom('https://github.com/freeCodeCamp/freeCodeCamp', access_token)
-  html.scrape_project('https://github.com/freeCodeCamp/freeCodeCamp')
+  api_m.scrape_project_list(project_list, access_token)
+  api_m.collect_sbom(api.repo_url, access_token)
+  html.scrape_project(api.repo_url)
 
   # Converting features to pandas dataframe
   api_df = api_m.convertToDataFrame()
@@ -125,13 +128,16 @@ elif mode == 'rescrape':
   # Delete the export file provided
   os.remove(export_bash_csv)
 
+  # Exporting to excel file
+  export_to_excel()    
+
 elif mode == 'subscrape':
   # Prompt user to provide star range for scraping
   high = int(input("Please enter an upper limit for the star range you are collecting: ")) 
   low = int(input("Please enter a lower limit for the star range you are collecting: "))
   
   # Scrape a smaller amount of projects, only a list
-  api.get_projects(low, high)
+  api.get_projects(low, high, access_token)
 
   # Converting features to pandas dataframe
   api_df = api_m.convertToDataFrame()
