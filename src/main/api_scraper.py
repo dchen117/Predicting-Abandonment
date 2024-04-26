@@ -107,25 +107,31 @@ def get_projects(low, high, access_token):
     # While loop to go through each range from low to high
     while high > low:
         # Change ranges accordingly to get <1000 projects
-        if high == 400000:
+        if high > 25000:
+            # Set decrement value accordingly, additional if statement is to ensure we are decrementing correctly
             decrement = 375000
-        elif high == 25000:
+            decrement = high - 25000 if (high-decrement) < 25000 else decrement
+        elif high > 15000:
             decrement = 5000
-        elif high == 15000:
+            decrement = high - 15000 if (high-decrement) < 15000 else decrement
+        elif high > 5000:
             decrement = 500
-        elif high == 5000:
+            decrement = high - 5000 if (high-decrement) < 5000 else decrement
+        elif high > 3000:
             decrement = 100
-        elif high == 3000 or high == 1000:
+            decrement = high - 3000 if (high-decrement) < 3000 else decrement
+        elif high > 680:
             decrement = 10
-        elif high == 680:
+            decrement = high - 680 if (high-decrement) < 680 else decrement
+        elif high > 500:
             decrement = 5
-        elif high == 500:
+            decrement = high - 500 if (high-decrement) < 500 else decrement
+        else:
             decrement = 1
-
+        
+        # To ensure the decrement does not get projects outside of star range specified
         if (high-decrement) < low:
           decrememt = high - low
-
-        # Search URL just in case => q=stars%3A120..120+created%3A2021-01-01..2021-12-31&
 
         # Add the 'created:' parameter for <178 stars
         if high <= 179:
