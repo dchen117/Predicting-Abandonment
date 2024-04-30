@@ -35,11 +35,7 @@ export_file = "features_" + formatted_datetime + ".xlsx"
 
 # Export merged dataframe as Excel file
 def export_to_excel():
-    if Path(export_file).is_file():
-        with pd.ExcelWriter(export_file, mode="a", engine="openpyxl", if_sheet_exists="overlay") as writer:
-            df.to_excel(writer,sheet_name="Sheet1", startrow=writer.sheets["Sheet1"].max_row, index = False,header= False)
-    else:
-        df.to_excel(export_file, index=False)
+    df.to_excel(export_file, index=False)
 
 
 # Execute based on mode
@@ -66,27 +62,34 @@ if mode == 'scrape':
     # Exporting to excel file
     export_to_excel()    
     
+  try:
+    # Retrieve the SSH urls for the bash script
+    df['Clone SSH URL'].to_csv('clone_urls.txt', header=False, index=False)
 
-  # Retrieve the SSH urls for the bash script
-  df['Clone SSH URL'].to_csv('clone_urls.txt', header=False, index=False)
+    # Create a file to store the bash data, will be later deleted in order to avoid duplicate data
+    export_bash_csv = "clone_data.csv"
+    open(export_bash_csv, 'a').close()
 
-  # Create a file to store the bash data, will be later deleted in order to avoid duplicate data
-  export_bash_csv = "clone_data.csv"
-  open(export_bash_csv, 'a').close()
+    # Run the bash script scraper, using subprocess.run()
+    command = f"./clone_scraper.sh ./clone_urls.txt {export_bash_csv}"
+    subprocess.run(command, shell=True, capture_output=True, text=True)
+  
+  except KeyboardInterrupt:
+    print("KeyboardInterrupt Detected. Saving Results...")
 
-  # Run the bash script scraper, using subprocess.run()
-  command = f"./clone_scraper.sh ./clone_urls.txt {export_bash_csv}"
-  subprocess.run(command, shell=True, capture_output=True, text=True)
+  finally:
+    # Converting features to pandas dataframe
+    bash_df = pd.read_csv(export_bash_csv, header=None, names=['Clone SSH URL','Number of Files','Depth of Files','Number of Contributors','Number of Commits','Number of Merges','Number of Branches','Number of Tags','Number of Links','Has README','Has SECURITY','Has Conduct','Has Contributing','Has ISSUE_TEMPLATE','Has PULL_TEMPLATE']) 
 
-  # Converting features to pandas dataframe
-  bash_df = pd.read_csv(export_bash_csv, header=None, names=['Clone SSH URL','Number of Files','Depth of Files','Number of Contributors','Number of Commits','Number of Merges','Number of Branches','Number of Tags','Number of Links','Has README','Has SECURITY','Has Conduct','Has Contributing','Has ISSUE_TEMPLATE','Has PULL_TEMPLATE']) 
+    # Ask the user for the file path to the export file for the bash script
+    # Merge the dataframes again
+    df = pd.merge(df, bash_df, how='outer', on='Clone SSH URL')
 
-  # Ask the user for the file path to the export file for the bash script
-  # Merge the dataframes again
-  df = pd.merge(df, bash_df, how='outer', on='Clone SSH URL')
+    # Delete the export file provided
+    os.remove(export_bash_csv)
 
-  # Delete the export file provided
-  os.remove(export_bash_csv)
+    # Update excel file with new features
+    export_to_excel()
 
 elif mode == 'rescrape':
   # Prompt user for the name of the import file to be used
