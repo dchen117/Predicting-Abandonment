@@ -29,7 +29,7 @@ df = ""
 
 # Making export file
 current_datetime = datetime.datetime.now()
-formatted_datetime = current_datetime.strftime("%Y-%m-%d_%H:%M:%S")
+formatted_datetime = current_datetime.strftime("%Y-%m-%d_%H-%M-%S")
 export_file = "features_" + formatted_datetime + ".xlsx"
 
 
