@@ -131,7 +131,7 @@ def get_projects(low, high, access_token):
         
         # To ensure the decrement does not get projects outside of star range specified
         if (high-decrement) < low:
-          decrememt = high - low
+          decrement = high - low
 
         # Add the 'created:' parameter for <178 stars
         if high <= 179:

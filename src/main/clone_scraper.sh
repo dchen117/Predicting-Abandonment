@@ -125,7 +125,7 @@ for i in "${repo_list[@]}"; do
   echo "$i,${file_types[@]}" >> "$FILE_NAME"
 
   # Output data to the csv file
-  echo "$i,$num_files,$depth,$num_contributors,$num_commits,$num_merges,$num_branches,$num_tags,$num_links,$README,$SECURITY,$CONDUCT,$CONTRIBUTING,$ISSUE_TEMPLATE,$PULL_TEMPLATE,${file_types[@]}" >> "$export_file"
+  echo "$i,$num_files,$depth,$num_contributors,$num_commits,$num_merges,$num_branches,$num_tags,$num_links,$README,$SECURITY,$CONDUCT,$CONTRIBUTING,$ISSUE_TEMPLATE,$PULL_TEMPLATE" >> "$export_file"
 
   # CODE LEFT HERE JUST IN CASE: 
   # Remove the cloned repository's directory
