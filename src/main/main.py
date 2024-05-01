@@ -9,6 +9,8 @@ import subprocess
 import sys
 import os
 import datetime
+from prompt_toolkit import prompt
+from prompt_toolkit.completion import PathCompleter
 
 # Adding ArgumentParse object with description
 parser = argparse.ArgumentParser(description='Scrapes features from Github projects.')
@@ -29,7 +31,7 @@ df = ""
 
 # Making export file
 current_datetime = datetime.datetime.now()
-formatted_datetime = current_datetime.strftime("%Y-%m-%d_%H-%M-%S")
+formatted_datetime = current_datetime.strftime("%Y-%m-%d_H%H-M%M-S%S")
 export_file = "features_" + formatted_datetime + ".xlsx"
 
 
@@ -41,8 +43,8 @@ def export_to_excel():
 # Execute based on mode
 if mode == 'scrape':
   # Prompt user to provide star range for scraping
-  high = int(input("Please enter an upper limit for the star range you are collecting: ")) 
-  low = int(input("Please enter a lower limit for the star range you are collecting: ")) 
+  high = int(prompt("Please enter an upper limit for the star range you are collecting: ")) 
+  low = int(prompt("Please enter a lower limit for the star range you are collecting: ")) 
 
   # Scraping features using html and api scrapers
   try:
@@ -85,23 +87,24 @@ if mode == 'scrape':
     # Merge the dataframes again
     df = pd.merge(df, bash_df, how='outer', on='Clone SSH URL')
 
-    # Delete the export file provided
+    # Delete the files created
     os.remove(export_bash_csv)
+    os.remove("clone_urls.txt")
 
     # Update excel file with new features
     export_to_excel()
 
 elif mode == 'rescrape':
   # Prompt user for the name of the import file to be used
-  import_file = str(input("Please enter the name of the import file containing the list of projects you've collected: ")) 
+  import_file = prompt("Please enter the name of the import file containing the list of projects you've collected: ", completer=PathCompleter())
   
   # Import the list of projects from the import Excel file
-  project_list = pd.read_excel(import_file)["Project_URL"].tolist()
+  project_list = pd.read_excel(import_file)["Project URL"].tolist()
 
   # Scraping features using html and api scrapers
   api_m.scrape_project_list(project_list, access_token)
-  api_m.collect_sbom(api.repo_url, access_token)
-  html.scrape_project(api.repo_url)
+  api_m.collect_sbom_list(api_m.repo_url, access_token)
+  html.scrape_project_list(api_m.repo_url)
 
   # Converting features to pandas dataframe
   api_df = api_m.convertToDataFrame()
@@ -130,19 +133,22 @@ elif mode == 'rescrape':
   
   # Delete the export file provided
   os.remove(export_bash_csv)
+  os.remove("clone_urls.txt")
 
   # Exporting to excel file
   export_to_excel()    
 
 elif mode == 'subscrape':
   # Prompt user to provide star range for scraping
-  high = int(input("Please enter an upper limit for the star range you are collecting: ")) 
-  low = int(input("Please enter a lower limit for the star range you are collecting: "))
+  high = int(prompt("Please enter an upper limit for the star range you are collecting: ")) 
+  low = int(prompt("Please enter a lower limit for the star range you are collecting: "))
   
   # Scrape a smaller amount of projects, only a list
   api.get_projects(low, high, access_token)
 
   # Converting features to pandas dataframe
-  api_df = api_m.convertToDataFrame()
+  api_df = api.convertToDataFrame()
   df = api_df
-
+    
+  # export to excel file
+  export_to_excel()
