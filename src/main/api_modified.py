@@ -31,14 +31,12 @@ repo_watches = []
 
 # Directory name for storing sbom files
 current_dir = os.getcwd()
-current_datetime = datetime.datetime.now()
-formatted_datetime = current_datetime.strftime("%Y-%m-%d_%H:%M:%S")
-sbom_dir_name = f"sbom_{formatted_datetime}"
-sbom_dir_path = f"{current_dir}/{sbom_dir_name}"
+current_datetime = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+sbom_dir_name = f"sbom_{current_datetime}"
+sbom_dir_path = f"{current_dir}/sbom/{sbom_dir_name}"
 	
 def collect_sbom(project_url, access_token):
-    if not os.path.exists(sbom_dir_name): 
-        os.makedirs(sbom_dir_name)
+    os.makedirs(f"sbom/{sbom_dir_name}", exist_ok=True)
 
     owner_repo = project_url[19:]
     sbom_url = f"https://api.github.com/repos/{owner_repo}/dependency-graph/sbom"

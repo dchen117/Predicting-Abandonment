@@ -4,9 +4,9 @@ import api_scraper as api
 import html_scraper as html
 import pandas as pd
 import argparse
-from pathlib import Path
+#from pathlib import Path
 import subprocess
-import sys
+#import sys
 import os
 import datetime
 from prompt_toolkit import prompt
@@ -37,7 +37,8 @@ export_file = "features_" + formatted_datetime + ".xlsx"
 
 # Export merged dataframe as Excel file
 def export_to_excel():
-    df.to_excel(export_file, index=False)
+    os.makedirs(os.path.dirname(f"features/{export_file}"), exist_ok=True)
+    df.to_excel(f"features/{export_file}", index=False)
 
 
 # Execute based on mode
@@ -48,48 +49,41 @@ if mode == 'scrape':
 
   # Scraping features using html and api scrapers
   try:
-    api.get_projects(low, high, access_token)
-    html.scrape_project_list(api.repo_url)
-    api_m.collect_sbom_list(api.repo_url, access_token)
-  except KeyboardInterrupt:
-    print("KeyboardInterrupt Detected. Saving results...")
-  finally:
-    # Converting features to pandas dataframe
-    api_df = api.convertToDataFrame()
-    html_df = html.convertToDataFrame()
-
-    # Merging dataframes
-    df = pd.merge(api_df, html_df, how='outer', on='Project URL')
-    
-    # Exporting to excel file
-    export_to_excel()    
-    
-  try:
-    # Retrieve the SSH urls for the bash script
-    df['Clone SSH URL'].to_csv('clone_urls.txt', header=False, index=False)
-
     # Create a file to store the bash data, will be later deleted in order to avoid duplicate data
     export_bash_csv = "clone_data.csv"
     open(export_bash_csv, 'a').close()
 
+    # Run API and HTML scrapers
+    api.get_projects(low, high, access_token)
+    html.scrape_project_list(api.repo_url)
+    api_m.collect_sbom_list(api.repo_url, access_token)
+
+    api_df = api.convertToDataFrame()
+
+    # Retrieve the SSH urls for the bash script
+    api_df['Clone SSH URL'].to_csv('clone_urls.txt', header=False, index=False)
+
     # Run the bash script scraper, using subprocess.run()
     command = f"./clone_scraper.sh ./clone_urls.txt {export_bash_csv}"
     subprocess.run(command, shell=True, capture_output=True, text=True)
-  
-  except KeyboardInterrupt:
-    print("KeyboardInterrupt Detected. Saving Results...")
 
+  except KeyboardInterrupt:
+    print("KeyboardInterrupt Detected. Saving results...")
+  
   finally:
     # Converting features to pandas dataframe
+    api_df = api.convertToDataFrame()
+    html_df = html.convertToDataFrame()
     bash_df = pd.read_csv(export_bash_csv, header=None, names=['Clone SSH URL','Number of Files','Depth of Files','Number of Contributors','Number of Commits','Number of Merges','Number of Branches','Number of Tags','Number of Links','Has README','Has SECURITY','Has Conduct','Has Contributing','Has ISSUE_TEMPLATE','Has PULL_TEMPLATE']) 
 
-    # Ask the user for the file path to the export file for the bash script
-    # Merge the dataframes again
+    # Merging dataframes
+    df = pd.merge(api_df, html_df, how='outer', on='Project URL')
     df = pd.merge(df, bash_df, how='outer', on='Clone SSH URL')
 
-    # Delete the files created
+    # Delete the files created by bash script
     os.remove(export_bash_csv)
-    os.remove("clone_urls.txt")
+    if os.path.exists("clone_urls.txt"):
+      os.remove("clone_urls.txt")
 
     # Update excel file with new features
     export_to_excel()
@@ -133,7 +127,8 @@ elif mode == 'rescrape':
   
   # Delete the export file provided
   os.remove(export_bash_csv)
-  os.remove("clone_urls.txt")
+  if os.path.exists("clone_urls.txt"):
+    os.remove("clone_urls.txt")
 
   # Exporting to excel file
   export_to_excel()    
