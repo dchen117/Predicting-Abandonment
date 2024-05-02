@@ -95,34 +95,37 @@ elif mode == 'rescrape':
   # Import the list of projects from the import Excel file
   project_list = pd.read_excel(import_file)["Project URL"].tolist()
 
-  # Scraping features using html and api scrapers
-  api_m.scrape_project_list(project_list, access_token)
-  api_m.collect_sbom_list(api_m.repo_url, access_token)
-  html.scrape_project_list(api_m.repo_url)
+  try:
+    # Create a file to store the bash data, will be later deleted in order to avoid duplicate data
+    export_bash_csv = "clone_data.csv"
+    open(export_bash_csv, 'a').close()
 
-  # Converting features to pandas dataframe
-  api_df = api_m.convertToDataFrame()
-  html_df = html.convertToDataFrame()
+    # Scraping features using html and api scrapers
+    api_m.scrape_project_list(project_list, access_token)
+    api_m.collect_sbom_list(api_m.repo_url, access_token)
+    html.scrape_project_list(api_m.repo_url)
+
+    api_df = api_m.convertToDataFrame()
+
+    # Retrieve the SSH urls for the bash script
+    api_df['Clone SSH URL'].to_csv('clone_urls.txt', header=False, index=False)
+    
+    # Run the bash script scraper, using subprocess.run()
+    # NOTE: clone_urls.txt should still exist if it wasn't deleted or if project lists haven't changed
+    command = f"./clone_scraper.sh ./clone_urls.txt {export_bash_csv}"
+    subprocess.run(command, shell=True, capture_output=True, text=True)
+  
+  except KeyboardInterrupt:
+    print("KeyboardInterrupt Detected. Saving Results")
+
+  finally:
+    # Converting features to pandas dataframe
+    api_df = api_m.convertToDataFrame()
+    html_df = html.convertToDataFrame()
+    bash_df = pd.read_csv(export_bash_csv, header=None, names=['Clone SSH URL','Number of Files','Depth of Files','Number of Contributors','Number of Commits','Number of Merges','Number of Branches','Number of Tags','Number of Links','Has README','Has SECURITY','Has Conduct','Has Contributing','Has ISSUE_TEMPLATE','Has PULL_TEMPLATE']) 
 
   # Merging dataframes
   df = pd.merge(api_df, html_df, how='outer', on='Project URL')
-
-  # Retrieve the SSH urls for the bash script
-  # df['Clone SSH URL'].to_csv('clone_urls.txt', header=False, index=False, line_terminator='\n')
-  
-  # Create a file to store the bash data, will be later deleted in order to avoid duplicate data
-  export_bash_csv = "clone_data.csv"
-  open(export_bash_csv, 'a').close()
-
-  # Run the bash script scraper, using subprocess.run()
-  # NOTE: clone_urls.txt should still exist if it wasn't deleted or if project lists haven't changed
-  command = f"./clone_scraper.sh ./clone_urls.txt {export_bash_csv}"
-  subprocess.run(command, shell=True, capture_output=True, text=True)
-
-  # Converting features to pandas dataframe
-  bash_df = pd.read_csv(export_bash_csv, header=None, names=['Clone SSH URL','Number of Files','Depth of Files','Number of Contributors','Number of Commits','Number of Merges','Number of Branches','Number of Tags','Number of Links','Has README','Has SECURITY','Has Conduct','Has Contributing','Has ISSUE_TEMPLATE','Has PULL_TEMPLATE']) 
-  
-  # Merging dataframes
   df = pd.merge(df, bash_df, how='outer', on='Clone SSH URL')
   
   # Delete the export file provided
