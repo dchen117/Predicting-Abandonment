@@ -22,13 +22,13 @@ do
   repo_list+=("$line")
 done < "$import_file"
 
-
-for i in "${repo_list[@]}"; do
-  echo "$i"
-  git clone "$i"
+function scrape {
+  local arg=$1
+  echo "$arg"
+  git clone "$arg"
 
   # Get directory name based off of SSH clone link
-  directory=$(echo "$i" | cut -d '/' -f 2 | rev | cut -c 5- | rev)
+  directory=$(echo "$arg" | cut -d '/' -f 2 | rev | cut -c 5- | rev)
   cd $directory
 
   # Gets all files, including ones in sub-directories
@@ -37,12 +37,12 @@ for i in "${repo_list[@]}"; do
 
   # Get the max depth of files
   depth=$(find . -type f | sed 's/[^/]//g' | sort | tail -1 | awk '{ print length }' | tr -d "[:blank:]")
-  
-  # Number of Contributors, people who have made commits, could be more as remote commits are listed as different people
-  num_contributors=$(git shortlog -s -n | wc -l | tr -d "[:blank:]")
 
   # Number of Commits
   num_commits=$(git log --pretty=oneline | wc -l | tr -d "[:blank:]")
+
+  # Number of Contributors, people who have made commits, could be more as remote commits are listed as different people
+  num_contributors=$(git log --format='%aN' | sort -u | wc -l | tr -d "[:blank:]")ls
 
   # Number of Merge Commits, is included in number of commits above
   num_merges=$(git log --pretty=oneline --merges | wc -l | tr -d "[:blank:]")
@@ -122,10 +122,10 @@ for i in "${repo_list[@]}"; do
 
   # Export filetypes to a separate file as data is awkward to store in pandas dataframe
   FILE_NAME="file_types -> $DATE"
-  echo "$i,${file_types[@]}" >> "$FILE_NAME"
+  echo "$arg,${file_types[@]}" >> "$FILE_NAME"
 
   # Output data to the csv file
-  echo "$i,$num_files,$depth,$num_contributors,$num_commits,$num_merges,$num_branches,$num_tags,$num_links,$README,$SECURITY,$CONDUCT,$CONTRIBUTING,$ISSUE_TEMPLATE,$PULL_TEMPLATE" >> "$export_file"
+  flock -x "$export_file" sh -c "echo '$arg,$num_files,$depth,$num_contributors,$num_commits,$num_merges,$num_branches,$num_tags,$num_links,$README,$SECURITY,$CONDUCT,$CONTRIBUTING,$ISSUE_TEMPLATE,$PULL_TEMPLATE' >> $export_file"
 
   # CODE LEFT HERE JUST IN CASE: 
   # Remove the cloned repository's directory
@@ -140,4 +140,23 @@ for i in "${repo_list[@]}"; do
   # To decompress the repository use the following command:
   # -x extracts archive, other two options same as above command
   # tar -xzf "$directory".tar.gz
-done 
+}
+
+# Define the maximum number of concurrent processes
+max_processes=10
+current_processes=0
+
+for arg in "${repo_list[@]}"; do
+      # Check if the maximum number of concurrent processes is reached
+    if (( current_processes >= max_processes )); then
+        wait -n  # Wait for any background process to finish
+        ((current_processes--))
+    fi
+
+    # Run the function in the background
+    scrape "$arg" &
+    ((current_processes++))
+done
+
+# Wait for the remaining background processes to finish
+wait

@@ -7,6 +7,7 @@ import argparse
 import subprocess
 import os
 import datetime
+import time
 from prompt_toolkit import prompt
 from prompt_toolkit.completion import PathCompleter
 
@@ -52,6 +53,7 @@ if mode != 'subscrape':
 
   # Scraping features using html and api scrapers
   try:
+    start_time = time.time()
     # Create a file to store the bash data, will be later deleted in order to avoid duplicate data
     export_bash_csv = "clone_data.csv"
     open(export_bash_csv, 'a').close()
@@ -103,7 +105,13 @@ if mode != 'subscrape':
 
     # Update excel file with new features
     export_to_excel()
-
+    
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    hours, rem = divmod(elapsed_time, 3600)
+    minutes, seconds = divmod(rem, 60)
+    print("Execution time: {:0>2}:{:0>2}:{:05.2f}".format(int(hours), int(minutes), seconds))
+    
 elif mode == 'subscrape':
   # Prompt user to provide star range for scraping
   high = int(prompt("Please enter an upper limit for the star range you are collecting: ")) 

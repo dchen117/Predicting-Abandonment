@@ -9,10 +9,7 @@ from selenium.common.exceptions import WebDriverException
 import pandas as pd
 import time
 from bs4 import BeautifulSoup
-import threading
 from concurrent.futures import ThreadPoolExecutor
-import multiprocessing
-import sys
 
 # Chrome options to be added for Selenium Driver to speed up data collection speed
 # Includes: Headless mode and no images
@@ -64,6 +61,7 @@ def scrape_prs(project_url, driver):
             return [open_prs, close_prs]
         else:
             time.sleep(10)
+
     print(f"{project_url}: open_prs and close_prs not found")
     return [None, None]
 
@@ -87,7 +85,9 @@ def scrape_owner(project_url, driver):
 
     verified = soup.find('summary', {'title': 'Label: Verified'})
     if verified != None:
-        verified = verified.text.split()[0]
+        verified = "TRUE"
+    else:
+        verified = "FALSE"
 
     print(f"{project_url} owner status: {verified}")
 
@@ -95,24 +95,29 @@ def scrape_owner(project_url, driver):
     followers = soup.find('a', class_='Link--secondary no-underline no-wrap')
     if followers != None:
         followers = followers.text.split()[0]
+    else:
+        followers = 0
     print(f"{project_url} followers: {followers}")
 
     # Number of Owner Members
     members = soup.find('span', class_='Counter js-profile-member-count')
     if members != None:
-      while members.text == "":
-        driver.get(owner_url)
-        WebDriverWait(driver, 10).until(
-          EC.visibility_of_element_located((By.TAG_NAME, 'body'))
-        )
-        time.sleep(5)
-        html = driver.page_source
-        soup = BeautifulSoup(html, "html.parser")
-        members = soup.find('span', class_='Counter js-profile-member-count')
-        if members == None:
-          break
-      if members != None:
-        members = members.text.split()[0]
+        while members.text == "":
+            driver.get(owner_url)
+            WebDriverWait(driver, 10).until(
+            EC.visibility_of_element_located((By.TAG_NAME, 'body'))
+            )
+            time.sleep(5)
+            html = driver.page_source
+            soup = BeautifulSoup(html, "html.parser")
+            members = soup.find('span', class_='Counter js-profile-member-count')
+            if members == None:
+                break
+        if members != None:
+            members = members.text.split()[0]
+      
+    if members == None:
+        members = 0
 
     print(f"{project_url} members: {members}")
 
@@ -200,11 +205,16 @@ def scrape_issues(project_url, driver):
             num_milestones = soup.find(href=f"/{project}/milestones")
             if num_milestones != None:
                 num_milestones = num_milestones.find("span").text
-            
-        if open_issues == None or closed_issues == None or num_labels == None or num_milestones == None:
-            time.sleep(10)
-        else:
-            break
+                
+            if open_issues == None or closed_issues == None or num_labels == None or num_milestones == None:
+                time.sleep(10)
+            else:
+                break
+    
+    if open_issues == None:
+        open_issues = 0
+    if closed_issues == None:
+        closed_issues = 0
 
     if type(num_labels) != int:
         # labels
