@@ -3,16 +3,15 @@
 # Listed below are the headers to be copied to the csv file when needed
 # Number of Files,Max Depth of Files,Number of Contributors,Number of Commits,Number of Merge Commits,Number of Branches,Number of Tags,Number of Links,Has README,Has SECURITY,Has CODE_OF_CONDUCT,Has CONTRIBUTING,Has ISSUE_TEMPLATE,Has PULL_REQUEST_TEMPLATE
 
-if [[ $# -ne 4 ]]; then
-  echo "usage: ./clone_scraper [fullpath_to_import_file] [fullpath_to_export_file] [clone_repo_directory] [remove_option]"
+if [[ $# -ne 3 ]]; then
+  echo "usage: ./clone_scraper [fullpath_to_import_file] [fullpath_to_export_file] [remove_option]"
   exit 
 fi
 
 # Store command line argument variables
 import_file=$1
 export_file=$2
-clone_repo_directory=$3
-remove_option=$4
+remove_option=$3
 
 DATE=$(date)
 repo_list=()
@@ -123,18 +122,22 @@ function scrape {
   # Switch to parent directory
   cd ..
 
-  # Export filetypes to a separate file as data is awkward to store in pandas dataframe
-  FILE_NAME="file_types -> $DATE"
-  echo "$arg,${file_types[@]}" >> "$FILE_NAME"
-
-  # Output data to the csv file
-  flock -x "$export_file" sh -c "echo '$arg,$num_files,$depth,$num_contributors,$num_commits,$num_merges,$num_branches,$num_tags,$num_links,$README,$SECURITY,$CONDUCT,$CONTRIBUTING,$ISSUE_TEMPLATE,$PULL_TEMPLATE' >> $export_file"
-
+  # Remove cloned repo if specified by remove option
   if [[ "$remove" == "yes" ]]; then
     echo -e "y\ny\n" | rm -r $directory
   fi
 
-# CODE LEFT HERE JUST IN CASE: 
+  # Switch to parent directory again, so main.py can read the csv file
+  cd ..
+
+  # Export filetypes to a separate file as data is awkward to store in pandas dataframe
+  FILE_NAME="file_types -> $DATE"
+  echo "$arg,${file_types[@]}" >> ./file_types/"$FILE_NAME"
+  
+  # Output data to the csv file
+  flock -x "$export_file" sh -c "echo '$arg,$num_files,$depth,$num_contributors,$num_commits,$num_merges,$num_branches,$num_tags,$num_links,$README,$SECURITY,$CONDUCT,$CONTRIBUTING,$ISSUE_TEMPLATE,$PULL_TEMPLATE' >> $export_file"
+  
+  # CODE LEFT HERE JUST IN CASE: 
   # Remove the cloned repository's directory
   # cd ..
 
@@ -152,8 +155,15 @@ function scrape {
 max_processes=10
 current_processes=0
 
+# Create directory to store filetypes if it does not exist
+mkdir -p file_types
+
+# Create directory where cloned repos will be stored
+repo_directory=$(echo Repositories_"$DATE")
+mkdir "$repo_directory"
+
 # Change into directory where cloned repos will be stored
-cd "$clone_repo_directory"
+cd "$repo_directory"
 
 for arg in "${repo_list[@]}"; do
       # Check if the maximum number of concurrent processes is reached
