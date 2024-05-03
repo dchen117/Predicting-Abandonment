@@ -42,7 +42,7 @@ function scrape {
   num_commits=$(git log --pretty=oneline | wc -l | tr -d "[:blank:]")
 
   # Number of Contributors, people who have made commits, could be more as remote commits are listed as different people
-  num_contributors=$(git log --format='%aN' | sort -u | wc -l | tr -d "[:blank:]")ls
+  num_contributors=$(git log --format='%aN' | sort -u | wc -l | tr -d "[:blank:]")
 
   # Number of Merge Commits, is included in number of commits above
   num_merges=$(git log --pretty=oneline --merges | wc -l | tr -d "[:blank:]")
