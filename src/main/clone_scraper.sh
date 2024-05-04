@@ -135,7 +135,7 @@ function scrape {
   echo "$repo,${file_types[@]}" >> ./file_types/"$FILE_NAME"
   
   # Output data to the csv file
-  flock -x "$export_file" sh -c "echo '$repo,$num_files,$depth,$num_contributors,$num_commits,$num_merges,$num_branches,$num_tags,$num_links,$README,$SECURITY,$CONDUCT,$CONTRIBUTING,$ISSUE_TEMPLATE,$PULL_TEMPLATE' >> $export_file"
+  flock "$export_file" sh -c "echo '$repo,$num_files,$depth,$num_contributors,$num_commits,$num_merges,$num_branches,$num_tags,$num_links,$README,$SECURITY,$CONDUCT,$CONTRIBUTING,$ISSUE_TEMPLATE,$PULL_TEMPLATE' >> $export_file"
   
   # CODE LEFT HERE JUST IN CASE: 
   # Remove the cloned repository's directory
@@ -162,7 +162,7 @@ mkdir -p file_types
 mkdir -p repository
 
 # Create directory where cloned repos will be stored
-repo_directory=$(echo Repositories_"$DATE")
+repo_directory="Repositories_$DATE"
 mkdir "$repo_directory"
 
 # Change into directory where cloned repos will be stored
@@ -174,17 +174,21 @@ for repo in "${repo_list[@]}"; do
         wait -n  # Wait for any background process to finish
         ((current_processes--))
     fi
-
+    
     # Run the function in the background
     scrape "$repo" "$remove_option" &
     ((current_processes++))
 done
+
+# Wait for the remaining background processes to finish
+wait
+
+# Change into parent directory
+cd ..
 
 # Remove directory holding the cloned repositories if needed
 if [[ "$remove_option" == "yes" ]]; then
   rm -r "$repo_directory"
 else
   mv "$repo_directory" ./repository
-
-# Wait for the remaining background processes to finish
-wait
+fi
