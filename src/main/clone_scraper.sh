@@ -151,10 +151,6 @@ function scrape {
   # tar -xzf "$directory".tar.gz
 }
 
-# Define the maximum number of concurrent processes
-max_processes=10
-current_processes=0
-
 # Create directory to store filetypes if it does not exist
 mkdir -p file_types
 
@@ -168,27 +164,47 @@ mkdir "$repo_directory"
 # Change into directory where cloned repos will be stored
 cd "$repo_directory"
 
+# Define the maximum number of concurrent processes
+max_processes=10
+
+# Array to store the PIDs of background tasks
+declare -a pids
+
+# Check status of all background processes. Waits if current processes >= max_processes.
+function wait_pid {
+  while [[ ${#pids[@]} -ge max_processes ]]; do
+      for pid in "${pids[@]}"; do
+          if ! kill -0 "$pid" 2>/dev/null; then
+              pids=("${pids[@]/$pid}")  # Remove finished PID from array
+          fi
+      done
+      sleep 0.5
+  done
+}
+
+function cleanup {
+  # Change into parent directory
+  cd ..
+
+  # Remove directory holding the cloned repositories if needed
+  if [[ "$remove_option" == "yes" ]]; then
+    rm -rf "$repo_directory"
+  else
+    mv "$repo_directory" ./repository
+  fi
+}
+
+trap cleanup EXIT
+trap cleanup SIGINT
+
 for repo in "${repo_list[@]}"; do
-      # Check if the maximum number of concurrent processes is reached
-    if (( current_processes >= max_processes )); then
-        wait -n  # Wait for any background process to finish
-        ((current_processes--))
-    fi
+    # Waits if maximum number of concurrent processes is reached
+    wait_pid
     
     # Run the function in the background
     scrape "$repo" "$remove_option" &
-    ((current_processes++))
+    pids+=($!)
 done
 
 # Wait for the remaining background processes to finish
 wait
-
-# Change into parent directory
-cd ..
-
-# Remove directory holding the cloned repositories if needed
-if [[ "$remove_option" == "yes" ]]; then
-  rm -r "$repo_directory"
-else
-  mv "$repo_directory" ./repository
-fi
