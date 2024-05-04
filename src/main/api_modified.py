@@ -1,9 +1,7 @@
 import requests
-from requests.auth import HTTPBasicAuth 
 import pandas as pd
 import time
 import os
-import math
 import datetime
 
 # Initialize the lists to store the information for each repo
@@ -65,6 +63,8 @@ def collect_sbom_list(project_list, access_token):
     for project in project_list:
         collect_sbom(project, access_token)
 
+def replace_none(value):
+    return "None" if value is None else value
 
 def scrape_project(project_url, access_token):
     project = project_url[19:]
@@ -103,7 +103,7 @@ def scrape_project(project_url, access_token):
         repo_size.append(repo_info.get("size", "size not found"))
         repo_created_date.append(repo_info.get("created_at", "Created date not found"))
         repo_last_push.append(repo_info.get("pushed_at", "Last push not found"))
-        repo_language.append(repo_info.get("language", "Language not found"))
+        repo_language.append(replace_none(repo_info.get("language", "Language not found")))
         repo_discussions.append(repo_info.get("has_discussions", "Discussions not found"))
         repo_pages.append(repo_info.get("has_pages", "Pages not found"))
         repo_archived.append(repo_info.get("archived", "Archived not found"))

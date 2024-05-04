@@ -10,6 +10,7 @@ import datetime
 import time
 from prompt_toolkit import prompt
 from prompt_toolkit.completion import PathCompleter
+from concurrent.futures import ThreadPoolExecutor
 
 # Adding ArgumentParse object with description
 parser = argparse.ArgumentParser(description='Scrapes features from Github projects.')
@@ -30,6 +31,13 @@ current_datetime = datetime.datetime.now()
 formatted_datetime = current_datetime.strftime("%Y-%m-%d_H%H-M%M-S%S")
 export_file = "features_" + formatted_datetime + ".xlsx"
 
+# Function that prints execution time of code
+def exec_time(start_time, end_time):
+    elapsed_time = end_time - start_time
+    hours, rem = divmod(elapsed_time, 3600)
+    minutes, seconds = divmod(rem, 60)
+    print("Execution time: {:0>2}:{:0>2}:{:05.2f}".format(int(hours), int(minutes), seconds))
+
 # Export merged dataframe as Excel file
 def export_to_excel():
   os.makedirs(os.path.dirname(f"features/{export_file}"), exist_ok=True)
@@ -38,6 +46,7 @@ def export_to_excel():
 if mode != 'subscrape':
   # Execute based on mode
   # api_s is the selected version of the api scraper
+  remove = prompt("Would you like to discard cloned repositories in this run? (yes/no): ")
   if mode == 'scrape':
     # Prompt user to provide star range for scraping
     high = int(prompt("Please enter an upper limit for the star range you are collecting: ")) 
@@ -54,6 +63,17 @@ if mode != 'subscrape':
   # Scraping features using html and api scrapers
   try:
     start_time = time.time()
+
+    # Function that runs bash script scraper using subprocess.run()
+    def bash_scrape():
+      command = f"./clone_scraper.sh ./clone_urls.txt {export_bash_csv} {remove}"
+      proc = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
+      for line in proc.stdout:
+        print(line.decode().rstrip())
+
+      # Wait for subprocess to finish running
+      proc.wait()
+
     # Create a file to store the bash data, will be later deleted in order to avoid duplicate data
     export_bash_csv = "clone_data.csv"
     open(export_bash_csv, 'a').close()
@@ -68,18 +88,18 @@ if mode != 'subscrape':
     # Retrieve the SSH urls for the bash script
     api_df['Clone SSH URL'].to_csv('clone_urls.txt', header=False, index=False)
 
-    # Run HTML scraper and collect SBOMs
-    html.scrape_project_list(api_s.repo_url)
-    api_m.collect_sbom_list(api_s.repo_url, access_token)
+    # Multithreading
+    with ThreadPoolExecutor(max_workers=3) as p:
+      # Run HTML scraper and collect SBOMs
+      future1 = p.submit(html.scrape_project_list, api_s.repo_url)
+      future2 = p.submit(api_m.collect_sbom_list, api_s.repo_url, access_token)
 
-    # Run the bash script scraper, using subprocess.run()
-    command = f"./clone_scraper.sh ./clone_urls.txt {export_bash_csv}"
-    proc = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
-    for line in proc.stdout:
-      print(line.decode().rstrip())
+      # Run the bash script scraper
+      future3 = p.submit(bash_scrape)
 
-    # Wait for subprocess to finish running
-    proc.wait()
+      future1.result()
+      future2.result()
+      future3.result()
 
   except KeyboardInterrupt:
     print("KeyboardInterrupt Detected. Saving results...")
@@ -107,22 +127,31 @@ if mode != 'subscrape':
     export_to_excel()
     
     end_time = time.time()
-    elapsed_time = end_time - start_time
-    hours, rem = divmod(elapsed_time, 3600)
-    minutes, seconds = divmod(rem, 60)
-    print("Execution time: {:0>2}:{:0>2}:{:05.2f}".format(int(hours), int(minutes), seconds))
+    exec_time(start_time, end_time)
     
 elif mode == 'subscrape':
   # Prompt user to provide star range for scraping
   high = int(prompt("Please enter an upper limit for the star range you are collecting: ")) 
   low = int(prompt("Please enter a lower limit for the star range you are collecting: "))
   
-  # Scrape a smaller amount of projects, only a list
-  api.get_projects(low, high, access_token)
-
-  # Converting features to pandas dataframe
-  api_df = api.convertToDataFrame()
-  df = api_df
+  try:
+    start_time = time.time()
+    # Scrape a smaller amount of projects, only a list
+    api.get_projects(low, high, access_token)
+  except KeyboardInterrupt:
+    print("KeyboardInterrupt Detected. Saving results...")
+  
+  except Exception as e:
+    print("Error Detected:", e)
+    print("Saving Results...")
     
-  # export to excel file
-  export_to_excel()
+  finally:
+    # Converting features to pandas dataframe
+    api_df = api.convertToDataFrame()
+    df = api_df
+      
+    # export to excel file
+    export_to_excel()
+    
+    end_time = time.time()
+    exec_time(start_time, end_time)

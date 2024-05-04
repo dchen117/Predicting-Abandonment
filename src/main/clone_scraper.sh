@@ -24,13 +24,13 @@ do
 done < "$import_file"
 
 function scrape {
-  local arg=$1
+  local repo=$1
   local remove=$(echo "$2" | tr '[:upper:]' '[:lower:]')
-  echo "$arg"
-  git clone "$arg"
+  echo "$repo"
+  git clone "$repo"
 
   # Get directory name based off of SSH clone link
-  directory=$(echo "$arg" | cut -d '/' -f 2 | rev | cut -c 5- | rev)
+  directory=$(echo "$repo" | cut -d '/' -f 2 | rev | cut -c 5- | rev)
   cd $directory
 
   # Gets all files, including ones in sub-directories
@@ -132,10 +132,10 @@ function scrape {
 
   # Export filetypes to a separate file as data is awkward to store in pandas dataframe
   FILE_NAME="file_types -> $DATE"
-  echo "$arg,${file_types[@]}" >> ./file_types/"$FILE_NAME"
+  echo "$repo,${file_types[@]}" >> ./file_types/"$FILE_NAME"
   
   # Output data to the csv file
-  flock -x "$export_file" sh -c "echo '$arg,$num_files,$depth,$num_contributors,$num_commits,$num_merges,$num_branches,$num_tags,$num_links,$README,$SECURITY,$CONDUCT,$CONTRIBUTING,$ISSUE_TEMPLATE,$PULL_TEMPLATE' >> $export_file"
+  flock -x "$export_file" sh -c "echo '$repo,$num_files,$depth,$num_contributors,$num_commits,$num_merges,$num_branches,$num_tags,$num_links,$README,$SECURITY,$CONDUCT,$CONTRIBUTING,$ISSUE_TEMPLATE,$PULL_TEMPLATE' >> $export_file"
   
   # CODE LEFT HERE JUST IN CASE: 
   # Remove the cloned repository's directory
@@ -158,6 +158,9 @@ current_processes=0
 # Create directory to store filetypes if it does not exist
 mkdir -p file_types
 
+# Create directory that will hold directories of cloned repositories
+mkdir -p repository
+
 # Create directory where cloned repos will be stored
 repo_directory=$(echo Repositories_"$DATE")
 mkdir "$repo_directory"
@@ -165,7 +168,7 @@ mkdir "$repo_directory"
 # Change into directory where cloned repos will be stored
 cd "$repo_directory"
 
-for arg in "${repo_list[@]}"; do
+for repo in "${repo_list[@]}"; do
       # Check if the maximum number of concurrent processes is reached
     if (( current_processes >= max_processes )); then
         wait -n  # Wait for any background process to finish
@@ -173,9 +176,15 @@ for arg in "${repo_list[@]}"; do
     fi
 
     # Run the function in the background
-    scrape "$arg" "$remove_option" &
+    scrape "$repo" "$remove_option" &
     ((current_processes++))
 done
+
+# Remove directory holding the cloned repositories if needed
+if [[ "$remove_option" == "yes" ]]; then
+  rm -r "$repo_directory"
+else
+  mv "$repo_directory" ./repository
 
 # Wait for the remaining background processes to finish
 wait

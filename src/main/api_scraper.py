@@ -29,6 +29,9 @@ repo_org = []
 repo_topics = []
 repo_ssh_url = []
 
+def replace_none(value):
+    return "None" if value is None else value
+
 # Function used to scrape the data using the Github API
 def get_github_repo_info(search_filter, page_number, access_token):
     api_url = f"https://api.github.com/search/repositories?q="+str(search_filter)+"&page="+str(page_number)+"&per_page=100"
@@ -56,7 +59,6 @@ def get_github_repo_info(search_filter, page_number, access_token):
         num_repos = response.json()['total_count']
 
         for repo_info in repo_list:
-
             # Extract and print relevant information
             repo_url.append(repo_info.get("html_url", "URL not found"))
             repo_stars.append(repo_info.get("stargazers_count", "Stargazers count not found"))
@@ -67,7 +69,7 @@ def get_github_repo_info(search_filter, page_number, access_token):
             repo_size.append(repo_info.get("size", "size not found"))
             repo_created_date.append(repo_info.get("created_at", "Created date not found"))
             repo_last_push.append(repo_info.get("pushed_at", "Last push not found"))
-            repo_language.append(repo_info.get("language", "Language not found"))
+            repo_language.append(replace_none(repo_info.get("language", "Language not found")))
             repo_discussions.append(repo_info.get("has_discussions", "Discussions not found"))
             repo_pages.append(repo_info.get("has_pages", "Pages not found"))
             repo_archived.append(repo_info.get("archived", "Archived not found"))
