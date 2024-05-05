@@ -164,22 +164,19 @@ mkdir "$repo_directory"
 # Change into directory where cloned repos will be stored
 cd "$repo_directory"
 
-# Define the maximum number of concurrent processes
+# Max processes
 max_processes=10
 
-# Array to store the PIDs of background tasks
-declare -a pids
+# Function to limit background processes
+limit_processes() {
+    # Get the number of background processes
+    local count=$(jobs -p | wc -l)
 
-# Check status of all background processes. Waits if current processes >= max_processes.
-function wait_pid {
-  while [[ ${#pids[@]} -ge max_processes ]]; do
-      for pid in "${pids[@]}"; do
-          if ! kill -0 "$pid" 2>/dev/null; then
-              pids=("${pids[@]/$pid}")  # Remove finished PID from array
-          fi
-      done
-      sleep 0.5
-  done
+    # Check if the count exceeds the limit (10)
+    while [ $count -ge $max_processes ]; do
+        sleep 1  # Adjust the sleep duration as needed
+        count=$(jobs -p | wc -l)  # Update the count
+    done
 }
 
 function cleanup {
@@ -199,11 +196,10 @@ trap cleanup SIGINT
 
 for repo in "${repo_list[@]}"; do
     # Waits if maximum number of concurrent processes is reached
-    wait_pid
+    limit_processes
     
     # Run the function in the background
     scrape "$repo" "$remove_option" &
-    pids+=($!)
 done
 
 # Wait for the remaining background processes to finish
